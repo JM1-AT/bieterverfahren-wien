@@ -12,7 +12,9 @@
 {% block nav %}
 <nav class="nav">
   <div class="nav-logo">
-    <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien">
+    <a href="{{ url_for('admin.dashboard') if current_user.is_authenticated and current_user.rolle == 'admin' else url_for('bieter.dashboard') if current_user.is_authenticated else url_for('auth.login') }}">
+      <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien">
+    </a>
   </div>
   <div class="nav-right">
     <div class="nav-links">
@@ -60,5 +62,36 @@
 {% endblock %}
 
 {% block scripts %}{% endblock %}
+
+{% if current_user.is_authenticated %}
+<script>
+// Inaktivitäts-Timeout: Warnung bei 14min, Logout-Redirect bei 15min
+(function() {
+  const WARNUNG_MS  = 14 * 60 * 1000;  // 14 Minuten
+  const LOGOUT_MS   = 15 * 60 * 1000;  // 15 Minuten
+  let warnTimer, logoutTimer;
+
+  function reset() {
+    clearTimeout(warnTimer);
+    clearTimeout(logoutTimer);
+    warnTimer  = setTimeout(function() {
+      if (confirm('Sie sind seit 14 Minuten inaktiv. Noch 1 Minute bis zum automatischen Abmelden.\n\nJetzt aktiv bleiben?')) {
+        reset();
+        fetch(window.location.href, { method: 'HEAD' }); // Session serverseitig erneuern
+      }
+    }, WARNUNG_MS);
+    logoutTimer = setTimeout(function() {
+      window.location.href = '{{ url_for("auth.logout") }}';
+    }, LOGOUT_MS);
+  }
+
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, reset, { passive: true });
+  });
+
+  reset();
+})();
+</script>
+{% endif %}
 </body>
 </html>

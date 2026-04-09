@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from flask import Flask, redirect, url_for
-from flask_login import LoginManager
+from flask import Flask, redirect, url_for, session
+from flask_login import LoginManager, current_user, logout_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -79,10 +79,30 @@ def create_app():
             return '–'
         return dt.strftime('%d.%m.%Y · %H:%M:%S')
 
-    # Landing-Page Route
+    # Landing-Page Route: eingeloggte Nutzer → Dashboard
     @app.route('/')
     def index():
+        if current_user.is_authenticated:
+            if current_user.rolle == 'admin':
+                return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('bieter.dashboard'))
         return redirect(url_for('auth.login'))
+
+    # Session permanent setzen + Inaktivitäts-Timeout
+    @app.before_request
+    def session_erneuern():
+        from flask import request as req
+        if req.endpoint and req.endpoint.startswith('static'):
+            return
+        session.permanent = True
+        if current_user.is_authenticated:
+            jetzt = datetime.utcnow().timestamp()
+            letzte = session.get('_last_activity')
+            if letzte and (jetzt - letzte) > 900:  # 15 Minuten
+                logout_user()
+                session.clear()
+                return
+            session['_last_activity'] = jetzt
 
     # Rate-Limiting für Login (5 Versuche/Minute)
     limiter.limit('5 per minute')(auth_bp.view_functions.get('login', lambda: None))

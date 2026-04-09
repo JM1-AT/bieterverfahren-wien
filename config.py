@@ -10,7 +10,8 @@ IS_PROD = ENV == 'production'
 
 class Config:
     # Sicherheitsschlüssel – in Produktion via ENV setzen!
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32)
+    # Fixer Fallback-Key für Entwicklung (Sessions überleben App-Neustarts)
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'bv-wien-dev-secret-key-2026-maierhofer'
 
     # Datenbank
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -21,7 +22,7 @@ class Config:
     SESSION_COOKIE_SECURE = IS_PROD  # Nur HTTPS in Produktion
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    PERMANENT_SESSION_LIFETIME = 3600  # 1 Stunde
+    PERMANENT_SESSION_LIFETIME = 900   # 15 Minuten Inaktivität
 
     # Upload-Einstellungen
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 MB
@@ -33,8 +34,8 @@ class Config:
     if _fernet_key:
         FERNET_KEY = _fernet_key.encode()
     else:
-        # Nur für Entwicklung – in Produktion FERNET_KEY als ENV setzen!
-        FERNET_KEY = Fernet.generate_key()
+        # Stabiler Fallback für Entwicklung – in Produktion FERNET_KEY als ENV setzen!
+        FERNET_KEY = b'zbGora84Hfu1cUwETEzIRQOozT57HJBQbNmt0P0kWSY='
 
     # Google OAuth (deaktiviert)
     AUTH_GOOGLE_ENABLED = False

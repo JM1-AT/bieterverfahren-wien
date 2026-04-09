@@ -89,7 +89,7 @@ def login():
         # Admin ohne 2FA → direkt einloggen (2FA-Setup optional über Dashboard)
 
         # Einloggen und zur richtigen Seite weiterleiten
-        login_user(user, remember=False)
+        login_user(user, remember=True)
         user.letzter_login = datetime.utcnow()
         db.session.commit()
         audit_log('login_erfolgreich', {'rolle': user.rolle})
@@ -135,7 +135,7 @@ def zwei_fa_setup():
             audit_log_anonym('2fa_eingerichtet', {'user_id': user.id})
 
             # Einloggen
-            login_user(user, remember=False)
+            login_user(user, remember=True)
             user.letzter_login = datetime.utcnow()
             db.session.commit()
             return redirect(url_for('admin.dashboard'))
@@ -177,7 +177,7 @@ def zwei_fa_verify():
 
         if totp.verify(code):
             session.pop('pending_user_id', None)
-            login_user(user, remember=False)
+            login_user(user, remember=True)
             user.letzter_login = datetime.utcnow()
             db.session.commit()
             audit_log('2fa_erfolgreich')
