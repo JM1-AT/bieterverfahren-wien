@@ -1,0 +1,215 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ objekt.titel }}{% endblock %}
+{% block topbar_title %}{{ objekt.titel }}{% endblock %}
+
+{% block content %}
+
+{# Objekt-Header #}
+<div class="flex-between mb-16">
+  <div>
+    <div class="text-muted text-small">{{ objekt.strasse }}, {{ objekt.plz }} {{ objekt.ort }} · {{ objekt.flaeche_m2|int if objekt.flaeche_m2 else '–' }} m² · {{ objekt.geschaeftsbeziehung }}</div>
+    <div style="font-size:12px; margin-top:2px; color: var(--muted);">
+      {% if objekt.beginn %}Beginn: {{ objekt.beginn|datum }}{% endif %}
+      {% if objekt.ende %} · Ende: {{ objekt.ende|datum }}{% endif %}
+      · Startpreis: {{ objekt.startpreis|euro }}
+      · Zielpreis (intern): {{ objekt.zielpreis|euro if objekt.zielpreis else '–' }}
+    </div>
+  </div>
+  {% set status = objekt.status_label() %}
+  {% if status == 'aktiv' %}<span class="badge badge-active">{{ t('aktiv') }}</span>
+  {% elif status == 'endet_bald' %}<span class="badge badge-warn">{{ t('endet_bald') }}</span>
+  {% elif status == 'vorbereitung' %}<span class="badge badge-prep">{{ t('vorbereitung') }}</span>
+  {% else %}<span class="badge badge-done">{{ t('beendet') }}</span>{% endif %}
+</div>
+
+<div class="grid2">
+
+  {# Gebote (nur Admin sieht Namen) #}
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Alle Gebote</span>
+      <span class="card-action">{{ gebote|length }} Gebote</span>
+    </div>
+    {% if gebote %}
+    <table class="data-table" style="width:100%;">
+      <thead><tr><th>#</th><th>Bieter</th><th>Firma</th><th>Betrag</th><th>Zeit</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for gebot in gebote %}
+        <tr>
+          <td class="text-muted">{{ loop.index }}</td>
+          <td><b>{{ gebot.bieter.name }}</b><br><span class="text-muted text-small">{{ gebot.bieter.email }}</span></td>
+          <td class="text-muted">{{ gebot.bieter.firma or '–' }}</td>
+          <td style="font-weight:500;">{{ gebot.betrag|euro }}</td>
+          <td class="text-muted">{{ gebot.erstellt_am|datetime_de }}</td>
+          <td class="text-muted">{{ gebot.ip_adresse or '–' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="obj-row text-muted">Noch keine Gebote abgegeben.</div>
+    {% endif %}
+  </div>
+
+  {# NDA-Bestätigungen #}
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">NDA Bestätigungen</span>
+    </div>
+    <table class="data-table" style="width:100%;">
+      <thead><tr><th>Bieter</th><th>Bestätigt am</th><th>IP</th><th>Version</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for eintrag in nda_uebersicht %}
+        <tr>
+          <td><b>{{ eintrag.user.name }}</b></td>
+          <td>{{ eintrag.zustimmung.bestaetigt_am|datetime_de if eintrag.zustimmung else '–' }}</td>
+          <td class="text-muted">{{ eintrag.zustimmung.ip_adresse[:10] ~ '…' if eintrag.zustimmung and eintrag.zustimmung.ip_adresse else '–' }}</td>
+          <td>{{ eintrag.zustimmung.version if eintrag.zustimmung else '–' }}</td>
+          <td class="{{ 'nda-ok' if eintrag.zustimmung else 'nda-pend' }}">
+            {{ t('nda_bestaetigt') if eintrag.zustimmung else t('nda_ausstehend_status') }}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted" style="text-align:center;padding:16px;">Noch keine Bieter eingeladen.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Bieter verwalten #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Bieter verwalten</span>
+  </div>
+  <div style="padding: 16px; border-bottom: 0.5px solid var(--line);">
+    <form method="POST" action="{{ url_for('admin.bieter_hinzufuegen', objekt_id=objekt.id) }}" class="flex gap-8">
+      <select class="form-select" name="user_id" style="flex:1;">
+        <option value="">Bieter auswählen…</option>
+        {% for bieter in alle_bieter %}
+          {% if bieter.id not in eingeladene_ids %}
+          <option value="{{ bieter.id }}">{{ bieter.name }} ({{ bieter.email }})</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-ok" style="padding: 6px 14px; font-size:11px;">+ {{ t('einladen') }}</button>
+    </form>
+  </div>
+  {% for eintrag in nda_uebersicht %}
+  <div class="obj-row">
+    <div>
+      <div class="obj-title">{{ eintrag.user.name }}</div>
+      <div class="obj-meta">{{ eintrag.user.email }} · {{ eintrag.user.firma or '–' }}</div>
+    </div>
+    <div class="flex gap-8" style="align-items:center;">
+      <span class="{{ 'nda-ok' if eintrag.zustimmung else 'nda-pend' }}" style="font-size:10px;">
+        {{ '✔ NDA' if eintrag.zustimmung else '⏳ NDA' }}
+      </span>
+      <form method="POST" action="{{ url_for('admin.bieter_entfernen', objekt_id=objekt.id, user_id=eintrag.user.id) }}" onsubmit="return confirm('Bieter entfernen?');">
+        <button type="submit" class="btn-danger">Entfernen</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# NDA & Bieterbedingungen (objektspezifisch) #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">NDA &amp; Bieterbedingungen</span>
+    {% if nda_pdf %}
+    <span class="badge badge-active">PDF hochgeladen</span>
+    {% else %}
+    <span class="badge badge-warn">Kein PDF – Platzhaltertext aktiv</span>
+    {% endif %}
+  </div>
+  <div style="padding:16px; border-bottom:0.5px solid var(--line);">
+    <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">
+      Bieter müssen dieses Dokument lesen und bestätigen, bevor sie Zugang zu diesem Objekt erhalten.
+    </div>
+    <form method="POST" action="{{ url_for('admin.objekt_nda_upload', objekt_id=objekt.id) }}" enctype="multipart/form-data" class="flex gap-8" style="align-items:center;">
+      <input type="file" name="nda_pdf" accept=".pdf" required style="font-size:12px; flex:1;">
+      <button type="submit" class="btn-ok" style="padding:6px 14px; font-size:11px; white-space:nowrap;">
+        {{ 'PDF ersetzen' if nda_pdf else 'PDF hochladen' }}
+      </button>
+    </form>
+  </div>
+  {% if nda_pdf %}
+  <div style="padding:12px 16px; display:flex; align-items:center; gap:12px;">
+    <a href="{{ url_for('admin.objekt_nda_vorschau', objekt_id=objekt.id) }}" target="_blank"
+       style="font-size:11px; color:var(--accent); text-decoration:none;">↗ PDF ansehen</a>
+    <form method="POST" action="{{ url_for('admin.objekt_nda_loeschen', objekt_id=objekt.id) }}"
+          onsubmit="return confirm('NDA-Dokument für dieses Objekt löschen?');">
+      <button type="submit" class="btn-danger" style="font-size:10px;">Löschen</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{# Fotos #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Fotos (Slider)</span>
+    <span class="card-action text-muted">{{ fotos|length }} Foto(s)</span>
+  </div>
+  <div style="padding:16px; border-bottom: 0.5px solid var(--line);">
+    <form method="POST" action="{{ url_for('admin.foto_upload', objekt_id=objekt.id) }}" enctype="multipart/form-data" class="flex gap-8" style="align-items:center;">
+      <input type="file" name="fotos" multiple accept=".jpg,.jpeg,.png,.webp" style="font-size:12px; flex:1;">
+      <button type="submit" class="btn-ok" style="padding:6px 14px; font-size:11px; white-space:nowrap;">Hochladen</button>
+    </form>
+  </div>
+  {% if fotos %}
+  <div style="display:flex; flex-wrap:wrap; gap:12px; padding:16px;">
+    {% for foto in fotos %}
+    <div style="position:relative; width:120px;">
+      <img src="{{ url_for('admin.foto_ansehen', objekt_id=objekt.id, gespeicherter_name=foto.gespeicherter_name) }}"
+           alt="{{ foto.original_name }}"
+           style="width:120px; height:80px; object-fit:cover; border:0.5px solid var(--line);">
+      <div style="font-size:9px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">{{ foto.original_name }}</div>
+      <form method="POST" action="{{ url_for('admin.foto_loeschen', objekt_id=objekt.id, foto_id=foto.id) }}" onsubmit="return confirm('Foto löschen?');" style="margin-top:2px;">
+        <button type="submit" class="btn-danger" style="width:100%; font-size:9px;">Löschen</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="obj-row text-muted">Noch keine Fotos hochgeladen.</div>
+  {% endif %}
+</div>
+
+{# Dokumente #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">{{ t('dokumente') }}</span>
+  </div>
+  <div style="padding:16px; border-bottom: 0.5px solid var(--line);">
+    <form method="POST" action="{{ url_for('admin.dokument_upload', objekt_id=objekt.id) }}" enctype="multipart/form-data" class="flex gap-8" style="align-items:center;">
+      <input type="file" name="dokumente" multiple accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png" style="font-size:12px; flex:1;">
+      <button type="submit" class="btn-ok" style="padding:6px 14px; font-size:11px; white-space:nowrap;">Hochladen</button>
+    </form>
+  </div>
+  {% if objekt.dokumente %}
+  <table class="data-table" style="width:100%;">
+    <thead><tr><th>Dateiname</th><th>Typ</th><th>Größe</th><th>Hochgeladen</th><th></th></tr></thead>
+    <tbody>
+      {% for dok in objekt.dokumente %}
+      <tr>
+        <td><a href="{{ url_for('admin.dokument_download', dok_id=dok.id) }}" class="text-muted">↓ {{ dok.original_name }}</a></td>
+        <td class="text-muted">{{ dok.dateityp|upper }}</td>
+        <td class="text-muted">{{ dok.groesse_kb }} KB</td>
+        <td class="text-muted">{{ dok.hochgeladen_am|datum }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('admin.dokument_loeschen', objekt_id=objekt.id, dok_id=dok.id) }}" onsubmit="return confirm('Dokument löschen?');">
+            <button type="submit" class="btn-danger">Löschen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="obj-row text-muted">Noch keine Dokumente hochgeladen.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

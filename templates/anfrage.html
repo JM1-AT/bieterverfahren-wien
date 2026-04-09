@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('anfrage_titel') }} – Bieterverfahren Wien{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <div class="form-page-title">{{ t('anfrage_titel') }}</div>
+  <div class="form-page-sub">Ihr Zugang wird nach Prüfung durch den Administrator freigeschaltet.</div>
+
+  <form method="POST" action="{{ url_for('auth.anfrage') }}">
+    <div class="form-group">
+      <label class="form-label">{{ t('anfrage_name') }} *</label>
+      <input class="form-input" type="text" name="name" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ t('anfrage_email') }} *</label>
+      <input class="form-input" type="email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ t('anfrage_firma') }}</label>
+      <input class="form-input" type="text" name="firma">
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ t('anfrage_begruendung') }}</label>
+      <textarea class="form-textarea" name="begruendung" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn-primary">{{ t('anfrage_btn') }}</button>
+  </form>
+
+  <div class="mt-16">
+    <a href="{{ url_for('auth.login') }}" class="text-muted text-small">← Zurück zum Login</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang() }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Bieterverfahren Wien{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+{% block nav %}
+<nav class="nav">
+  <div class="nav-logo">
+    <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien">
+  </div>
+  <div class="nav-right">
+    <div class="nav-links">
+      <a href="{{ url_for('auth.login') }}#ablauf">{{ t('nav_ablauf') }}</a>
+      <a href="{{ url_for('auth.login') }}#faq">{{ t('nav_faq') }}</a>
+      <a href="{{ url_for('auth.login') }}#kontakt">{{ t('nav_kontakt') }}</a>
+    </div>
+    {% if current_user.is_authenticated %}
+    <div class="nav-user">
+      <span>{{ current_user.name }}</span>
+      &nbsp;·&nbsp;
+      <a href="{{ url_for('auth.logout') }}">{{ t('nav_abmelden') }}</a>
+    </div>
+    {% endif %}
+    <div class="lang-switch">
+      <a href="{{ url_for('auth.sprache', lang='de') }}" class="{{ 'active' if current_lang() == 'de' }}">DE</a>
+      <span>|</span>
+      <a href="{{ url_for('auth.sprache', lang='en') }}" class="{{ 'active' if current_lang() == 'en' }}">EN</a>
+    </div>
+  </div>
+</nav>
+{% endblock %}
+
+{# Flash Messages #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+{% block footer %}
+<footer>
+  <div class="footer-left">
+    <div class="nav-logo-box"><span>BV</span></div>
+    <span>{{ t('footer_copyright') }}</span>
+  </div>
+  <a href="https://www.bieterverfahrenwien.at" target="_blank" rel="noopener">{{ t('footer_link') }}</a>
+</footer>
+{% endblock %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

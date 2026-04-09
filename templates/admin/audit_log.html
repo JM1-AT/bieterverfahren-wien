@@ -1,0 +1,59 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('admin_audit') }}{% endblock %}
+{% block topbar_title %}{{ t('admin_audit') }}{% endblock %}
+
+{% block content %}
+
+{# Filter + Export #}
+<div class="card mb-16">
+  <div class="card-head">
+    <span class="card-title">Filter</span>
+    <a href="{{ url_for('admin.audit_log_export') }}" class="card-action">↓ {{ t('csv_export') }}</a>
+  </div>
+  <div style="padding:16px;">
+    <form method="GET" action="{{ url_for('admin.audit_log_view') }}" class="flex gap-8" style="flex-wrap:wrap;">
+      <select class="form-select" name="user_id" style="flex:1; min-width:160px;">
+        <option value="">Alle Nutzer</option>
+        {% for user in alle_nutzer %}
+        <option value="{{ user.id }}" {{ 'selected' if filter_user == user.id }}>{{ user.name }}</option>
+        {% endfor %}
+      </select>
+      <input class="form-input" type="text" name="aktion" placeholder="Aktion…" value="{{ filter_aktion }}" style="flex:1; min-width:140px;">
+      <input class="form-input" type="date" name="von" style="flex:1; min-width:140px;">
+      <input class="form-input" type="date" name="bis" style="flex:1; min-width:140px;">
+      <button type="submit" class="btn-ok" style="padding:8px 16px; font-size:11px; white-space:nowrap;">Filtern</button>
+      <a href="{{ url_for('admin.audit_log_view') }}" class="btn-no" style="padding:8px 12px; font-size:11px;">Reset</a>
+    </form>
+  </div>
+</div>
+
+{# Einträge #}
+<div class="card">
+  <table class="data-table" style="width:100%;">
+    <thead>
+      <tr>
+        <th>Zeit</th>
+        <th>Nutzer</th>
+        <th>Aktion</th>
+        <th>Objekt-ID</th>
+        <th>IP</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for eintrag in eintraege %}
+      <tr>
+        <td class="text-muted" style="white-space:nowrap;">{{ eintrag.erstellt_am|datetime_de }}</td>
+        <td>{{ eintrag.user.name if eintrag.user else '–' }}</td>
+        <td><span style="font-family:monospace; font-size:10px; background:var(--surface); padding:2px 6px; border-radius:2px;">{{ eintrag.aktion }}</span></td>
+        <td class="text-muted">{{ eintrag.objekt_id or '–' }}</td>
+        <td class="text-muted">{{ eintrag.ip_adresse or '–' }}</td>
+        <td class="text-muted text-small" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ eintrag.details or '–' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Keine Einträge gefunden.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

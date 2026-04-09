@@ -1,0 +1,54 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('admin_objekte') }}{% endblock %}
+{% block topbar_title %}{{ t('admin_objekte') }}{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-16">
+  <div></div>
+  <a href="{{ url_for('admin.objekt_neu') }}" class="btn-primary">+ {{ t('neu_anlegen') }}</a>
+</div>
+
+<div class="card">
+  <table class="data-table" style="width:100%;">
+    <thead>
+      <tr>
+        <th>Objekt</th>
+        <th>Adresse</th>
+        <th>Startpreis</th>
+        <th>Beginn</th>
+        <th>Ende</th>
+        <th>Bieter</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for obj in objekte %}
+      <tr>
+        <td>
+          <div style="font-weight:500;">{{ obj.titel }}</div>
+          {% if obj.objektnummer %}<div class="text-muted text-small">{{ obj.objektnummer }}</div>{% endif %}
+        </td>
+        <td class="text-muted">{{ obj.strasse }}, {{ obj.plz }} {{ obj.ort }}</td>
+        <td>{{ obj.startpreis|euro }}</td>
+        <td class="text-muted">{{ obj.beginn|datum }}</td>
+        <td class="text-muted">{{ obj.ende|datum }}</td>
+        <td>{{ obj.zugaenge|length }}</td>
+        <td>
+          {% set status = obj.status_label() %}
+          {% if status == 'aktiv' %}<span class="badge badge-active">{{ t('aktiv') }}</span>
+          {% elif status == 'endet_bald' %}<span class="badge badge-warn">{{ t('endet_bald') }}</span>
+          {% elif status == 'vorbereitung' %}<span class="badge badge-prep">{{ t('vorbereitung') }}</span>
+          {% else %}<span class="badge badge-done">{{ t('beendet') }}</span>{% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('admin.objekt_detail', objekt_id=obj.id) }}" class="text-muted text-small">Detail →</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">Noch keine Objekte angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

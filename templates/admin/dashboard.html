@@ -1,0 +1,208 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('admin_dashboard') }}{% endblock %}
+{% block topbar_title %}{{ t('admin_dashboard') }}{% endblock %}
+
+{% block content %}
+
+{# Schnellaktionen #}
+<div class="flex-between mb-16">
+  <div></div>
+  <div class="flex gap-8">
+    <a href="{{ url_for('admin.objekt_neu') }}" class="btn-primary">+ {{ t('neu_anlegen') }}</a>
+    <a href="{{ url_for('admin.nutzer_einladen') if false else url_for('admin.nutzer') }}" class="btn-secondary">{{ t('einladen') }}</a>
+  </div>
+</div>
+
+{# Metriken #}
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-label">{{ t('aktive_objekte') }}</div>
+    <div class="metric-val">{{ aktive_objekte }}</div>
+    <div class="metric-sub">Verfahren laufend</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">{{ t('aktive_bieter') }}</div>
+    <div class="metric-val">{{ aktive_bieter }}</div>
+    <div class="metric-sub">{{ offene_anfragen }} ausstehend</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">{{ t('offene_anfragen') }}</div>
+    <div class="metric-val">{{ offene_anfragen }}</div>
+    <div class="metric-sub">Warten auf Freischaltung</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">{{ t('nda_bestaetigt_ratio') }}</div>
+    <div class="metric-val">{{ nda_ratio }}</div>
+    <div class="metric-sub">Bieter haben bestätigt</div>
+  </div>
+</div>
+
+{# Aktive Verfahren + Offene Anfragen #}
+<div class="grid2">
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">{{ t('aktive_verfahren') }}</span>
+      <a href="{{ url_for('admin.objekt_neu') }}" class="card-action">+ {{ t('neu_anlegen') }}</a>
+    </div>
+    {% if objekte %}
+      {% for obj in objekte %}
+      <a href="{{ url_for('admin.objekt_detail', objekt_id=obj.id) }}" style="text-decoration:none;color:inherit;">
+        <div class="obj-row">
+          <div>
+            <div class="obj-title">{{ obj.titel }}</div>
+            <div class="obj-meta">
+              {% if obj.ende %}Endet {{ obj.ende|datum }}{% endif %}
+              · {{ obj.zugaenge|length }} Bieter
+            </div>
+          </div>
+          {% set status = obj.status_label() %}
+          {% if status == 'aktiv' %}
+            <span class="badge badge-active">{{ t('aktiv') }}</span>
+          {% elif status == 'endet_bald' %}
+            <span class="badge badge-warn">{{ t('endet_bald') }}</span>
+          {% elif status == 'vorbereitung' %}
+            <span class="badge badge-prep">{{ t('vorbereitung') }}</span>
+          {% else %}
+            <span class="badge badge-done">{{ t('beendet') }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="obj-row"><div class="text-muted">Noch keine Objekte angelegt.</div></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">{{ t('offene_anfragen_card') }}</span>
+      <a href="{{ url_for('admin.anfragen') }}" class="card-action">{{ t('alle_ansehen') }}</a>
+    </div>
+    {% if anfragen %}
+      {% for user in anfragen %}
+      <div class="anfrage-row">
+        <div>
+          <div class="anfrage-name">{{ user.name }}</div>
+          <div class="anfrage-email">{{ user.email }} · {{ user.erstellt_am|datetime_de }}</div>
+        </div>
+        <div>
+          <form method="POST" action="{{ url_for('admin.anfrage_bestaetigen', user_id=user.id) }}" style="display:inline;">
+            <button type="submit" class="btn-ok">{{ t('bestaetigen') }}</button>
+          </form>
+          <form method="POST" action="{{ url_for('admin.anfrage_ablehnen', user_id=user.id) }}" style="display:inline;">
+            <button type="submit" class="btn-no">{{ t('ablehnen') }}</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="anfrage-row"><div class="text-muted">Keine offenen Anfragen.</div></div>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Slider-Bilder verwalten ──────────────────────────────── #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Bieter-Dashboard Slider</span>
+    <span class="card-action text-muted">{{ slider_bilder|length }} Bild(er)</span>
+  </div>
+  <div style="padding:14px 16px; border-bottom:0.5px solid var(--line);">
+    <form method="POST" action="{{ url_for('admin.slider_upload') }}" enctype="multipart/form-data" class="flex gap-8" style="align-items:center;">
+      <input type="file" name="slider_bilder" multiple accept=".jpg,.jpeg,.png,.webp" style="font-size:12px; flex:1;">
+      <button type="submit" class="btn-ok" style="padding:6px 14px; font-size:11px; white-space:nowrap;">Bilder hochladen</button>
+    </form>
+  </div>
+  {% if slider_bilder %}
+  <div class="slider-thumbs" id="sliderThumbs">
+    {% for bild in slider_bilder %}
+    <div class="slider-thumb" data-id="{{ bild.id }}">
+      <img src="{{ url_for('admin.slider_bild', gespeicherter_name=bild.gespeicherter_name) }}" alt="{{ bild.original_name }}">
+      <div class="slider-thumb-name">{{ bild.original_name }}</div>
+      <form method="POST" action="{{ url_for('admin.slider_loeschen', bild_id=bild.id) }}" onsubmit="return confirm('Bild löschen?');">
+        <button type="submit" class="slider-thumb-del" title="Löschen">✕</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="padding:8px 16px; font-size:10px; color:var(--muted);">
+    Bilder ziehen zum Sortieren der Reihenfolge.
+  </div>
+  {% else %}
+  <div class="obj-row text-muted" style="font-size:11px;">Noch keine Bilder hochgeladen.</div>
+  {% endif %}
+</div>
+{# ─────────────────────────────────────────────────────────── #}
+
+{# NDA-Übersicht für erstes aktives Objekt #}
+{% if erstes_aktives and nda_uebersicht %}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">NDA Bestätigungen – {{ erstes_aktives.titel }}</span>
+    <a href="{{ url_for('admin.objekt_detail', objekt_id=erstes_aktives.id) }}" class="card-action">{{ t('alle_ansehen') }}</a>
+  </div>
+  <table class="data-table" style="width:100%;">
+    <thead>
+      <tr>
+        <th>Bieter</th>
+        <th>Bestätigt am</th>
+        <th>IP-Adresse</th>
+        <th>Version</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for eintrag in nda_uebersicht %}
+      <tr>
+        <td><b>{{ eintrag.user.name }}</b></td>
+        <td>{{ eintrag.zustimmung.bestaetigt_am|datetime_de if eintrag.zustimmung else '–' }}</td>
+        <td>{{ eintrag.zustimmung.ip_adresse[:8] ~ '…' if eintrag.zustimmung and eintrag.zustimmung.ip_adresse else '–' }}</td>
+        <td>{{ eintrag.zustimmung.version if eintrag.zustimmung else '–' }}</td>
+        <td class="{{ 'nda-ok' if eintrag.zustimmung else 'nda-pend' }}">
+          {{ t('nda_bestaetigt') if eintrag.zustimmung else t('nda_ausstehend_status') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if slider_bilder and slider_bilder|length > 1 %}
+<script>
+(function() {
+  const container = document.getElementById('sliderThumbs');
+  if (!container) return;
+  let dragged = null;
+
+  container.querySelectorAll('.slider-thumb').forEach(function(el) {
+    el.setAttribute('draggable', 'true');
+  });
+  container.addEventListener('dragstart', function(e) {
+    dragged = e.target.closest('.slider-thumb');
+    if (dragged) dragged.style.opacity = '0.4';
+  });
+  container.addEventListener('dragend', function(e) {
+    if (dragged) { dragged.style.opacity = '1'; dragged = null; }
+    saveOrder();
+  });
+  container.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const target = e.target.closest('.slider-thumb');
+    if (target && target !== dragged) {
+      const mid = target.getBoundingClientRect().left + target.offsetWidth / 2;
+      container.insertBefore(dragged, e.clientX < mid ? target : target.nextSibling);
+    }
+  });
+  function saveOrder() {
+    const ids = Array.from(container.querySelectorAll('.slider-thumb')).map(function(el) { return el.dataset.id; }).join(',');
+    const fd = new FormData(); fd.append('reihenfolge', ids);
+    fetch('{{ url_for("admin.slider_reihenfolge") }}', { method: 'POST', body: fd });
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

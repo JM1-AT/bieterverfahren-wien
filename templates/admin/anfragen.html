@@ -1,0 +1,36 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('admin_anfragen') }}{% endblock %}
+{% block topbar_title %}{{ t('admin_anfragen') }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Offene Anfragen</span>
+    <span class="card-action">{{ anfragen|length }} offen</span>
+  </div>
+  {% if anfragen %}
+  {% for user in anfragen %}
+  <div class="anfrage-row">
+    <div>
+      <div class="anfrage-name">{{ user.name }}</div>
+      <div class="anfrage-email">
+        {{ user.email }}
+        {% if user.firma %} · {{ user.firma }}{% endif %}
+        · {{ user.erstellt_am|datetime_de }}
+      </div>
+    </div>
+    <div class="flex gap-8">
+      <form method="POST" action="{{ url_for('admin.anfrage_bestaetigen', user_id=user.id) }}">
+        <button type="submit" class="btn-ok">{{ t('bestaetigen') }}</button>
+      </form>
+      <form method="POST" action="{{ url_for('admin.anfrage_ablehnen', user_id=user.id) }}">
+        <button type="submit" class="btn-no">{{ t('ablehnen') }}</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="anfrage-row text-muted">Keine offenen Anfragen.</div>
+  {% endif %}
+</div>
+{% endblock %}

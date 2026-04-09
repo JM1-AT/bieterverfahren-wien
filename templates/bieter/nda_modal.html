@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('nda_titel') }}{% endblock %}
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="nda-overlay">
+  <div class="nda-modal">
+
+    {# Header #}
+    <div class="nda-modal-head">
+      <div class="nda-modal-logo"><span>BV</span></div>
+      <div>
+        <div class="nda-modal-title">{{ t('nda_titel') }}</div>
+        <div class="nda-modal-sub">{{ t('nda_sub') }}</div>
+      </div>
+    </div>
+
+    {# Objekt #}
+    <div class="nda-obj">
+      <div class="nda-obj-label">Objekt</div>
+      <div class="nda-obj-title">{{ objekt.titel }} · {{ objekt.plz }} {{ objekt.ort }}</div>
+    </div>
+
+    {% if nda_pdf %}
+    {# ── PDF-Modus: Countdown-Sperre ── #}
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="nda-scroll-hint" id="scroll-hint">
+      Bitte lesen Sie das Dokument. Bestätigung in <b id="ct-sek">30</b> Sek. möglich.
+    </div>
+    <iframe
+      src="{{ url_for('bieter.nda_pdf', objekt_id=objekt.id) }}"
+      id="nda-text"
+      class="nda-text"
+      style="border:none; background:#fff;"
+      title="NDA & Bieterbedingungen">
+    </iframe>
+    {% else %}
+    {# ── Text-Modus: Scroll-Tracking ── #}
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="nda-scroll-hint" id="scroll-hint">{{ t('nda_scroll_hint') }}</div>
+    <div class="nda-text" id="nda-text">
+      {% for zeile in nda_text.split('\n') %}
+        {% if zeile.strip().startswith(('1.', '2.', '3.', '4.', '5.')) %}
+          <h3>{{ zeile.strip() }}</h3>
+        {% elif zeile.strip() %}
+          <p>{{ zeile.strip() }}</p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Formular #}
+    <form method="POST" action="{{ url_for('bieter.nda_bestaetigen', objekt_id=objekt.id) }}">
+      <input type="hidden" name="scrolled" id="scrolled-input" value="0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+
+      <div class="nda-checks">
+        <div class="nda-check">
+          <input type="checkbox" name="check1" id="check1" disabled>
+          <label for="check1"><span>{{ t('nda_check1') }}</span></label>
+        </div>
+        <div class="nda-check">
+          <input type="checkbox" name="check2" id="check2" disabled>
+          <label for="check2"><span>{{ t('nda_check2') }}</span></label>
+        </div>
+        <div class="nda-check">
+          <input type="checkbox" name="check3" id="check3" disabled>
+          <label for="check3"><span>{{ t('nda_check3') }}</span></label>
+        </div>
+      </div>
+
+      <div class="nda-footer">
+        <button type="submit" class="nda-btn" id="nda-btn" disabled>{{ t('nda_btn') }}</button>
+        <div class="nda-note">{{ t('nda_note') }} · Version {{ nda_version }}</div>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const progressFill = document.getElementById('progress-fill');
+const scrolledInput = document.getElementById('scrolled-input');
+const checks = [
+  document.getElementById('check1'),
+  document.getElementById('check2'),
+  document.getElementById('check3')
+];
+const ndaBtn = document.getElementById('nda-btn');
+
+let readComplete = false;
+
+function onReadComplete() {
+  if (readComplete) return;
+  readComplete = true;
+  scrolledInput.value = '1';
+  progressFill.style.width = '100%';
+  checks.forEach(c => c.disabled = false);
+  const hint = document.getElementById('scroll-hint');
+  if (hint) hint.style.display = 'none';
+}
+
+{% if nda_pdf %}
+// ── PDF-Modus: 30-Sekunden-Countdown ──
+let sekunden = 30;
+const ctSek = document.getElementById('ct-sek');
+const timer = setInterval(function() {
+  sekunden--;
+  if (ctSek) ctSek.textContent = sekunden;
+  progressFill.style.width = ((30 - sekunden) / 30 * 100) + '%';
+  if (sekunden <= 0) {
+    clearInterval(timer);
+    onReadComplete();
+  }
+}, 1000);
+{% else %}
+// ── Text-Modus: Scroll-Tracking ──
+const ndaText = document.getElementById('nda-text');
+ndaText.addEventListener('scroll', function() {
+  const total = this.scrollHeight - this.clientHeight;
+  const pct = total > 0 ? Math.min(100, (this.scrollTop / total) * 100) : 100;
+  progressFill.style.width = pct + '%';
+  if (pct >= 95) onReadComplete();
+});
+window.addEventListener('load', function() {
+  if (ndaText.scrollHeight <= ndaText.clientHeight) onReadComplete();
+});
+{% endif %}
+
+// Button aktivieren wenn alle 3 Checkboxen gesetzt
+checks.forEach(check => {
+  check.addEventListener('change', function() {
+    ndaBtn.disabled = !checks.every(c => c.checked) || !readComplete;
+  });
+});
+</script>
+{% endblock %}

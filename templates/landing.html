@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang() }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bieterverfahren Wien</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{# Sticky Nav #}
+<nav class="nav">
+  <div class="nav-logo">
+    <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien">
+  </div>
+  <div class="nav-right">
+    <div class="nav-links">
+      <a href="#ablauf">{{ t('nav_ablauf') }}</a>
+      <a href="#faq">{{ t('nav_faq') }}</a>
+      <a href="#kontakt">{{ t('nav_kontakt') }}</a>
+    </div>
+    <div class="lang-switch">
+      <a href="{{ url_for('auth.sprache', lang='de') }}" class="{{ 'active' if current_lang() == 'de' }}">DE</a>
+      <span>|</span>
+      <a href="{{ url_for('auth.sprache', lang='en') }}" class="{{ 'active' if current_lang() == 'en' }}">EN</a>
+    </div>
+  </div>
+</nav>
+
+{# Flash Messages #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+{# Hero – dunkler Hintergrund + Canvas-Netz-Animation #}
+<div class="hero">
+  <canvas id="netCanvas"></canvas>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <span class="hero-label">{{ t('hero_label') }}</span>
+      <div class="hero-h1">{{ t('hero_h1') }}</div>
+      <div class="hero-sub">{{ t('hero_sub') }}</div>
+    </div>
+    <div class="hero-right">
+      <div class="login-card">
+        <span class="login-card-label">{{ t('login_label') }}</span>
+        <form method="POST" action="{{ url_for('auth.login') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+          <input type="email" name="email" placeholder="{{ t('login_email') }}" required autocomplete="email">
+          <input type="password" name="passwort" placeholder="{{ t('login_passwort') }}" required autocomplete="current-password">
+          <button type="submit" class="btn-main">{{ t('login_btn') }}</button>
+        </form>
+        {# Google OAuth deaktiviert #}
+        {# <div class="divider"><span>oder</span></div> #}
+        {# <button class="btn-outline">{{ t('login_google') }}</button> #}
+        <a href="{{ url_for('auth.anfrage') }}" class="anfrage-link">{{ t('login_anfrage') }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Ablauf – 4 Schritte #}
+<div class="section" id="ablauf">
+  <span class="sec-label">{{ t('nav_ablauf') }}</span>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">{{ t('step1_num') }}</div>
+      <div class="step-title">{{ t('step1_title') }}</div>
+      <div class="step-text">{{ t('step1_text') }}</div>
+    </div>
+    <div class="step">
+      <div class="step-num">{{ t('step2_num') }}</div>
+      <div class="step-title">{{ t('step2_title') }}</div>
+      <div class="step-text">{{ t('step2_text') }}</div>
+    </div>
+    <div class="step">
+      <div class="step-num">{{ t('step3_num') }}</div>
+      <div class="step-title">{{ t('step3_title') }}</div>
+      <div class="step-text">{{ t('step3_text') }}</div>
+    </div>
+    <div class="step">
+      <div class="step-num">{{ t('step4_num') }}</div>
+      <div class="step-title">{{ t('step4_title') }}</div>
+      <div class="step-text">{{ t('step4_text') }}</div>
+    </div>
+  </div>
+</div>
+
+{# FAQ – Accordion #}
+<div class="faq" id="faq">
+  <span class="sec-label">{{ t('faq_titel') }}</span>
+  <div class="faq-item">
+    <div class="faq-q">{{ t('wie_funktioniert_q') }} <span class="faq-icon">+</span></div>
+    <div class="faq-a">{{ t('wie_funktioniert_a') }}</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">{{ t('zugang_q') }} <span class="faq-icon">+</span></div>
+    <div class="faq-a">{{ t('zugang_a') }}</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">{{ t('bindend_q') }} <span class="faq-icon">+</span></div>
+    <div class="faq-a">{{ t('bindend_a') }}</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">{{ t('wer_q') }} <span class="faq-icon">+</span></div>
+    <div class="faq-a">{{ t('wer_a') }}</div>
+  </div>
+</div>
+
+{# Footer #}
+<footer id="kontakt">
+  <div class="footer-left">
+    <div class="nav-logo-box"><span>BV</span></div>
+    <span>{{ t('footer_copyright') }}</span>
+  </div>
+  <a href="https://www.bieterverfahrenwien.at" target="_blank" rel="noopener">{{ t('footer_link') }}</a>
+</footer>
+
+<script src="{{ url_for('static', filename='network.js') }}"></script>
+<script>
+// FAQ Accordion
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.querySelector('.faq-q').addEventListener('click', () => {
+    item.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

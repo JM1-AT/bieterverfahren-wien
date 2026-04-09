@@ -1,0 +1,216 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('neu_anlegen') }}{% endblock %}
+{% block topbar_title %}Neues Objekt anlegen{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('admin.objekt_neu') }}" enctype="multipart/form-data">
+
+  {# GRUNDDATEN #}
+  <div class="form-section">
+    <div class="form-section-title">Grunddaten</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('geschaeftsbeziehung') }}</label>
+      <select class="form-select" name="geschaeftsbeziehung">
+        <option value="B2C">B2C</option>
+        <option value="B2B">B2B</option>
+      </select>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('titel_immobilie') }} *</label>
+        <input class="form-input" type="text" name="titel" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('objektnummer') }}</label>
+        <input class="form-input" type="text" name="objektnummer">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ t('flaeche_m2') }} *</label>
+      <input class="form-input" type="number" name="flaeche_m2" step="0.01" required>
+    </div>
+  </div>
+
+  {# ADRESSE #}
+  <div class="form-section">
+    <div class="form-section-title">Adresse</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('strasse') }} *</label>
+      <input class="form-input" type="text" name="strasse" required>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label">{{ t('plz') }} *</label>
+        <input class="form-input" type="text" name="plz" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('ort') }} *</label>
+        <input class="form-input" type="text" name="ort" value="Wien" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('land') }}</label>
+        <input class="form-input" type="text" name="land" value="Österreich">
+      </div>
+    </div>
+  </div>
+
+  {# BESCHREIBUNG #}
+  <div class="form-section">
+    <div class="form-section-title">Beschreibung</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('beschreibung') }} *</label>
+      <textarea class="form-textarea" name="beschreibung" rows="5" required></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('link_detail') }}</label>
+        <input class="form-input" type="url" name="link_detailbeschreibung" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('link_3d') }}</label>
+        <input class="form-input" type="url" name="link_3d_rundgang" placeholder="https://...">
+      </div>
+    </div>
+  </div>
+
+  {# ZEITRAUM #}
+  <div class="form-section">
+    <div class="form-section-title">Verfahrenszeitraum</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('beginn') }}</label>
+        <input class="form-input" type="datetime-local" name="beginn" id="beginn-input">
+        <div class="quick-dates">
+          <span class="quick-date" onclick="setDate('beginn-input', 0)">{{ t('jetzt') }}</span>
+          <span class="quick-date" onclick="setDate('beginn-input', 7)">{{ t('in_1_woche') }}</span>
+          <span class="quick-date" onclick="setDate('beginn-input', 14)">{{ t('in_2_wochen') }}</span>
+          <span class="quick-date" onclick="setDate('beginn-input', 21)">{{ t('in_3_wochen') }}</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('ende') }}</label>
+        <input class="form-input" type="datetime-local" name="ende" id="ende-input">
+        <div class="quick-dates">
+          <span class="quick-date" onclick="setDate('ende-input', 7)">{{ t('in_1_woche') }}</span>
+          <span class="quick-date" onclick="setDate('ende-input', 14)">{{ t('in_2_wochen') }}</span>
+          <span class="quick-date" onclick="setDate('ende-input', 21)">{{ t('in_3_wochen') }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# PREISE #}
+  <div class="form-section">
+    <div class="form-section-title">Preise</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('startpreis_label') }} *</label>
+        <input class="form-input" type="number" name="startpreis" step="1000" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('zielpreis_label') }}</label>
+        <input class="form-input" type="number" name="zielpreis" step="1000">
+      </div>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="sofortkauf_aktiv" id="sofortkauf" onchange="toggleSofortkauf()">
+      <label for="sofortkauf">{{ t('sofortkauf') }}</label>
+    </div>
+    <div id="sofortkauf-preis" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">{{ t('sofortkauf_preis') }}</label>
+        <input class="form-input" type="number" name="sofortkauf_preis" step="1000">
+      </div>
+    </div>
+  </div>
+
+  {# NEBENKOSTEN #}
+  <div class="form-section">
+    <div class="form-section-title">Nebenkosten</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('provision_label') }}</label>
+        <select class="form-select" name="maklerprovision">
+          <option value="3.0" selected>3,0%</option>
+          <option value="2.5">2,5%</option>
+          <option value="2.0">2,0%</option>
+          <option value="0">Keine</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('notar_label') }}</label>
+        <select class="form-select" name="notarkosten">
+          <option value="1.5" selected>1,5%</option>
+          <option value="1.0">1,0%</option>
+          <option value="2.0">2,0%</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('grunderwerb_label') }}</label>
+        <input class="form-input" type="number" name="grunderwerbssteuer" value="3.5" step="0.1">
+        <div class="form-checkbox mt-8">
+          <input type="checkbox" name="gew_nebenkosten_ausblenden" id="gew-ausbl">
+          <label for="gew-ausbl">{{ t('nebenkosten_ausbl') }}</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('gb_label') }}</label>
+        <input class="form-input" type="number" name="grundbuch_gebuehr" value="1.1" step="0.1">
+        <div class="form-checkbox mt-8">
+          <input type="checkbox" name="gb_nebenkosten_ausblenden" id="gb-ausbl">
+          <label for="gb-ausbl">{{ t('gb_nebenkosten_ausbl') }}</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# OPTIONEN #}
+  <div class="form-section">
+    <div class="form-section-title">Optionen</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('zusatzvereinbarungen') }}</label>
+      <textarea class="form-textarea" name="zusatzvereinbarungen" rows="3"></textarea>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="binding_bestaetigung_ausblenden" id="binding-ausbl">
+      <label for="binding-ausbl">{{ t('binding_ausbl') }}</label>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="angebotsliste_ausblenden" id="angebots-ausbl">
+      <label for="angebots-ausbl">{{ t('angebotsliste_ausbl') }}</label>
+    </div>
+  </div>
+
+  {# DOKUMENTE #}
+  <div class="form-section">
+    <div class="form-section-title">Dokumente</div>
+    <div class="form-group">
+      <label class="form-label">Dateien hochladen (PDF, DOCX, XLSX, JPG, PNG · max. 20 MB)</label>
+      <input type="file" name="dokumente" multiple accept=".pdf,.docx,.xlsx,.jpg,.jpeg,.png" style="margin-top:8px;font-size:12px;">
+    </div>
+  </div>
+
+  <button type="submit" class="btn-primary">{{ t('speichern') }}</button>
+  &nbsp;
+  <a href="{{ url_for('admin.objekte') }}" class="btn-secondary">Abbrechen</a>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setDate(inputId, daysFromNow) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  const iso = d.toISOString().slice(0, 16);
+  document.getElementById(inputId).value = iso;
+}
+
+function toggleSofortkauf() {
+  const checked = document.getElementById('sofortkauf').checked;
+  document.getElementById('sofortkauf-preis').style.display = checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}

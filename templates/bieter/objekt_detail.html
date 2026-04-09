@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}{{ objekt.titel }}{% endblock %}
+
+{% block content %}
+<div class="bieter-wrap">
+
+  {# Breadcrumb #}
+  <div class="text-muted text-small" style="margin-bottom:6px;">
+    <a href="{{ url_for('bieter.dashboard') }}" class="text-muted">← {{ t('bieter_titel') }}</a>
+  </div>
+
+  {# Objekt-Header #}
+  <div class="page-heading">{{ objekt.titel }}</div>
+  <div class="page-sub">
+    {{ objekt.plz }} {{ objekt.ort }}, {{ objekt.strasse }}
+    {% if objekt.flaeche_m2 %} · {{ objekt.flaeche_m2|int }} m²{% endif %}
+    · {{ objekt.geschaeftsbeziehung }}
+  </div>
+
+  {% if fotos %}
+  <div class="foto-slider" id="slider-wrap">
+    <div class="slider-track" id="slider-track">
+      {% for foto in fotos %}
+      <div class="slider-slide">
+        <img src="{{ url_for('bieter.foto_ansehen', objekt_id=objekt.id, gespeicherter_name=foto.gespeicherter_name) }}"
+             alt="{{ foto.original_name }}">
+      </div>
+      {% endfor %}
+    </div>
+    {% if fotos|length > 1 %}
+    <button class="slider-btn slider-prev" onclick="sliderMove(-1)">&#8249;</button>
+    <button class="slider-btn slider-next" onclick="sliderMove(1)">&#8250;</button>
+    <div class="slider-dots" id="slider-dots">
+      {% for foto in fotos %}
+      <span class="slider-dot {{ 'active' if loop.first }}" onclick="sliderGoTo({{ loop.index0 }})"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <hr class="divider-line">
+
+  <div class="detail-grid">
+
+    {# Linke Spalte #}
+    <div>
+      {# Höchstgebot #}
+      <div class="info-box">
+        <div class="info-label">{{ t('hoechstgebot') }}</div>
+        <div class="info-val">{{ hoechstgebot|euro if hoechstgebot else t('noch_kein_gebot') }}</div>
+        <div class="info-sub">{{ t('startpreis') }}: {{ objekt.startpreis|euro }}</div>
+      </div>
+
+      {# Countdown #}
+      {% if objekt.ende %}
+      <div class="info-box">
+        <div class="info-label">{{ t('endet_in') }}</div>
+        <div class="countdown">
+          <div class="ct"><div class="ct-num" id="ct-d">--</div><div class="ct-lbl">{{ t('tage') }}</div></div>
+          <div class="ct"><div class="ct-num" id="ct-h">--</div><div class="ct-lbl">{{ t('stunden') }}</div></div>
+          <div class="ct"><div class="ct-num" id="ct-m">--</div><div class="ct-lbl">{{ t('minuten') }}</div></div>
+          <div class="ct"><div class="ct-num" id="ct-s">--</div><div class="ct-lbl">{{ t('sekunden') }}</div></div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Dokumente #}
+      <div class="text-muted text-small uppercase" style="margin-bottom:8px;">{{ t('dokumente') }}</div>
+      {% if dokumente %}
+      <div class="docs-list">
+        {% for dok in dokumente %}
+        <div class="doc-row">
+          <div>
+            <div class="doc-name">{{ dok.original_name }}</div>
+            <div class="doc-meta">{{ dok.groesse_kb }} KB · {{ dok.hochgeladen_am|datum }}</div>
+          </div>
+          <a href="{{ url_for('bieter.dokument_download', dok_id=dok.id) }}" class="doc-dl">{{ t('download') }}</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted" style="font-size:12px;">Noch keine Dokumente verfügbar.</div>
+      {% endif %}
+
+      {# Nebenkosten #}
+      {% if nebenkosten and not objekt.gew_nebenkosten_ausblenden %}
+      <div class="info-box mt-16">
+        <div class="info-label">{{ t('nebenkosten') }}</div>
+        <table class="nebenkosten-table">
+          <tr><td>{{ t('maklerprovision') }} ({{ objekt.maklerprovision }}%)</td><td>{{ nebenkosten.provision|euro }}</td></tr>
+          <tr><td>{{ t('notarkosten') }} ({{ objekt.notarkosten }}%)</td><td>{{ nebenkosten.notar|euro }}</td></tr>
+          <tr><td>{{ t('grunderwerbssteuer') }} ({{ objekt.grunderwerbssteuer }}%)</td><td>{{ nebenkosten.grunderwerb|euro }}</td></tr>
+          {% if not objekt.gb_nebenkosten_ausblenden %}
+          <tr><td>{{ t('grundbucheintragung') }} ({{ objekt.grundbuch_gebuehr }}%)</td><td>{{ nebenkosten.grundbuch|euro }}</td></tr>
+          {% endif %}
+          <tr class="nebenkosten-total"><td>{{ t('gesamt_nebenkosten') }}</td><td>{{ nebenkosten.gesamt|euro }}</td></tr>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Rechte Spalte – Gebot abgeben #}
+    <div>
+      {% if objekt.ist_aktiv() %}
+      <div class="gebot-card">
+        <div class="gebot-label">{{ t('gebot_label') }}</div>
+        <form method="POST" action="{{ url_for('bieter.gebot_abgeben', objekt_id=objekt.id) }}">
+          <div class="gebot-input-wrap">
+            <span class="gebot-euro">€</span>
+            <input class="gebot-input" type="text" name="betrag" id="betrag-input"
+                   placeholder="{{ ((hoechstgebot or objekt.startpreis)|int + 1)|string }}"
+                   inputmode="numeric">
+          </div>
+          <div class="gebot-hint">
+            {{ t('gebot_hint') }}: {{ hoechstgebot|euro if hoechstgebot else objekt.startpreis|euro }}
+          </div>
+          {% if not objekt.binding_bestaetigung_ausblenden %}
+          <div class="gebot-check">
+            <input type="checkbox" name="binding" id="binding" required>
+            <span>{{ t('gebot_check') }}</span>
+          </div>
+          {% endif %}
+          <button type="submit" class="gebot-btn">{{ t('gebot_btn') }}</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="gebot-card" style="opacity:0.6;">
+        <div class="gebot-label">Bieterverfahren</div>
+        <div style="font-size:18px; font-weight:300; color:var(--accent);">{{ t('beendet') }}</div>
+        <div style="font-size:11px; color:rgba(234,224,200,0.45); margin-top:8px;">
+          Das Verfahren ist nicht mehr aktiv.
+        </div>
+      </div>
+      {% endif %}
+
+      {# Beschreibung #}
+      {% if objekt.beschreibung %}
+      <div class="info-box mt-16">
+        <div class="info-label">Objektbeschreibung</div>
+        <div style="font-size:12px; line-height:1.7; color:var(--text); margin-top:6px;">{{ objekt.beschreibung }}</div>
+      </div>
+      {% endif %}
+
+      {# Links #}
+      {% if objekt.link_detailbeschreibung %}
+      <div class="mt-8">
+        <a href="{{ objekt.link_detailbeschreibung }}" target="_blank" class="text-muted text-small">↗ Detailbeschreibung</a>
+      </div>
+      {% endif %}
+      {% if objekt.link_3d_rundgang %}
+      <div class="mt-8">
+        <a href="{{ objekt.link_3d_rundgang }}" target="_blank" class="text-muted text-small">↗ 3D-Rundgang</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if fotos|length > 1 %}
+<script>
+let sliderIdx = 0;
+const sliderTotal = {{ fotos|length }};
+
+function sliderMove(dir) {
+  sliderIdx = (sliderIdx + dir + sliderTotal) % sliderTotal;
+  sliderRender();
+}
+function sliderGoTo(idx) {
+  sliderIdx = idx;
+  sliderRender();
+}
+function sliderRender() {
+  document.getElementById('slider-track').style.transform = `translateX(-${sliderIdx * 100}%)`;
+  document.querySelectorAll('.slider-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === sliderIdx);
+  });
+}
+// Auto-advance alle 5 Sekunden
+setInterval(() => sliderMove(1), 5000);
+</script>
+{% endif %}
+{% if objekt.ende %}
+<script>
+const verfahrensende = new Date('{{ objekt.ende.isoformat() }}Z');
+
+function countdown() {
+  const jetzt = new Date();
+  const diff = Math.max(0, verfahrensende - jetzt);
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('ct-d').textContent = String(d).padStart(2, '0');
+  document.getElementById('ct-h').textContent = String(h).padStart(2, '0');
+  document.getElementById('ct-m').textContent = String(m).padStart(2, '0');
+  document.getElementById('ct-s').textContent = String(s).padStart(2, '0');
+}
+countdown();
+setInterval(countdown, 1000);
+</script>
+{% endif %}
+{% endblock %}

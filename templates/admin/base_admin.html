@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="{{ current_lang() }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin{% endblock %} – Bieterverfahren Wien</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="admin-wrap">
+
+  {# Sidebar #}
+  <div class="sidebar">
+    <div class="sb-logo">
+      <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="BV" style="height:20px;">
+      <span class="sb-brand">Admin</span>
+    </div>
+
+    <div class="sb-section">Übersicht</div>
+    <a href="{{ url_for('admin.dashboard') }}" class="sb-item {{ 'active' if request.endpoint == 'admin.dashboard' }}">
+      <div class="sb-dot {{ 'active' if request.endpoint == 'admin.dashboard' }}"></div>
+      {{ t('admin_dashboard') }}
+    </a>
+    <a href="{{ url_for('admin.objekte') }}" class="sb-item {{ 'active' if 'objekt' in request.endpoint }}">
+      <div class="sb-dot {{ 'active' if 'objekt' in request.endpoint }}"></div>
+      {{ t('admin_objekte') }}
+    </a>
+    <a href="{{ url_for('admin.nutzer') }}" class="sb-item {{ 'active' if request.endpoint == 'admin.nutzer' }}">
+      <div class="sb-dot {{ 'active' if request.endpoint == 'admin.nutzer' }}"></div>
+      {{ t('admin_nutzer') }}
+      {% set offene = namespace(count=0) %}
+      {# Badge für offene Anfragen #}
+    </a>
+    <a href="{{ url_for('admin.anfragen') }}" class="sb-item {{ 'active' if request.endpoint == 'admin.anfragen' }}">
+      <div class="sb-dot {{ 'active' if request.endpoint == 'admin.anfragen' }}"></div>
+      {{ t('admin_anfragen') }}
+    </a>
+
+    <div class="sb-section">Verwaltung</div>
+    <a href="{{ url_for('admin.audit_log_view') }}" class="sb-item {{ 'active' if request.endpoint == 'admin.audit_log_view' }}">
+      <div class="sb-dot {{ 'active' if request.endpoint == 'admin.audit_log_view' }}"></div>
+      {{ t('admin_audit') }}
+    </a>
+    <a href="{{ url_for('admin.einstellungen') }}" class="sb-item {{ 'active' if request.endpoint == 'admin.einstellungen' }}">
+      <div class="sb-dot {{ 'active' if request.endpoint == 'admin.einstellungen' }}"></div>
+      Einstellungen
+    </a>
+
+    <div style="margin-top: auto; padding: 16px; border-top: 0.5px solid rgba(234,224,200,0.1);">
+      <div style="font-size: 10px; color: rgba(234,224,200,0.4); margin-bottom: 4px;">{{ current_user.name }}</div>
+      <a href="{{ url_for('auth.logout') }}" style="font-size: 10px; color: rgba(234,224,200,0.5); letter-spacing: 0.08em;">
+        {{ t('nav_abmelden') }} →
+      </a>
+    </div>
+  </div>
+
+  {# Main Content #}
+  <div class="admin-main">
+    <div class="topbar">
+      <span class="topbar-title">{% block topbar_title %}{% endblock %}</span>
+      <div class="topbar-right">
+        <div class="lang-switch">
+          <a href="{{ url_for('auth.sprache', lang='de') }}" class="{{ 'active' if current_lang() == 'de' }}">DE</a>
+          <span>|</span>
+          <a href="{{ url_for('auth.sprache', lang='en') }}" class="{{ 'active' if current_lang() == 'en' }}">EN</a>
+        </div>
+        <span class="topbar-user">Admin · {{ current_user.name }}</span>
+      </div>
+    </div>
+
+    {# Flash Messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div style="padding: 0 24px; padding-top: 12px;">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

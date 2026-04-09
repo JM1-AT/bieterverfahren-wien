@@ -1,0 +1,13 @@
+Flask
+Flask-Login
+Flask-WTF
+Flask-Mail
+Flask-Limiter
+Flask-SQLAlchemy
+bcrypt
+pyotp
+qrcode[pil]
+cryptography
+APScheduler
+python-dotenv
+Pillow

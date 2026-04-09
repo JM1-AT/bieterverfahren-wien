@@ -1,0 +1,68 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{{ t('admin_nutzer') }}{% endblock %}
+{% block topbar_title %}{{ t('admin_nutzer') }}{% endblock %}
+
+{% block content %}
+
+{# Bieter manuell einladen #}
+<div class="card mb-16">
+  <div class="card-head"><span class="card-title">Bieter einladen</span></div>
+  <div style="padding:16px; border-bottom: 0.5px solid var(--line);">
+    <form method="POST" action="{{ url_for('admin.nutzer_einladen') }}" class="flex gap-8">
+      <input class="form-input" type="text" name="name" placeholder="Name" required style="flex:1;">
+      <input class="form-input" type="email" name="email" placeholder="E-Mail" required style="flex:1;">
+      <button type="submit" class="btn-ok" style="padding:8px 16px; font-size:11px; white-space:nowrap;">{{ t('einladen') }}</button>
+    </form>
+  </div>
+  <div style="padding:16px;">
+    <div style="font-size:11px; color:var(--muted); margin-bottom:8px;">XLSX-Import (Spalten: <b>email</b>, <b>name</b>, <i>firma</i> — erste Zeile = Header)</div>
+    <form method="POST" action="{{ url_for('admin.nutzer_xlsx_import') }}" enctype="multipart/form-data" class="flex gap-8" style="align-items:center;">
+      <input type="file" name="xlsx_datei" accept=".xlsx" required style="font-size:12px; flex:1;">
+      <button type="submit" class="btn-secondary" style="padding:8px 16px; font-size:11px; white-space:nowrap;">Importieren</button>
+    </form>
+  </div>
+</div>
+
+{# Nutzerliste #}
+<div class="card">
+  <table class="data-table" style="width:100%;">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>E-Mail</th>
+        <th>Firma</th>
+        <th>Rolle</th>
+        <th>Status</th>
+        <th>NDA</th>
+        <th>Objekte</th>
+        <th>Letzter Login</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for stat in nutzer_stats %}
+      {% set user = stat.user %}
+      <tr>
+        <td><b>{{ user.name }}</b></td>
+        <td class="text-muted">{{ user.email }}</td>
+        <td class="text-muted">{{ user.firma or '–' }}</td>
+        <td>
+          <span class="badge {{ 'badge-active' if user.rolle == 'admin' else 'badge-prep' }}">
+            {{ user.rolle|upper }}
+          </span>
+        </td>
+        <td>
+          {% if user.status == 'aktiv' %}<span class="badge badge-active">{{ t('aktiv') }}</span>
+          {% elif user.status == 'ausstehend' %}<span class="badge badge-warn">{{ t('ausstehend') }}</span>
+          {% else %}<span class="badge badge-done">{{ t('abgelehnt') }}</span>{% endif %}
+        </td>
+        <td>{{ stat.nda_count }} bestätigt</td>
+        <td>{{ stat.zugaenge_count }}</td>
+        <td class="text-muted">{{ user.letzter_login|datum if user.letzter_login else '–' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">Keine Nutzer vorhanden.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

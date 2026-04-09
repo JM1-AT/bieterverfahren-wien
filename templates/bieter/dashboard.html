@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('bieter_titel') }}{% endblock %}
+
+{% block content %}
+<div class="bieter-wrap">
+  {# ── Image Slider ────────────────────────────────────────── #}
+  {% if slider_bilder %}
+  <div class="bv-slider" id="bvSlider">
+    {% for bild in slider_bilder %}
+    <div class="bv-slide {{ 'active' if loop.first }}">
+      <img src="{{ url_for('bieter.slider_bild', gespeicherter_name=bild.gespeicherter_name) }}"
+           alt="Slider Bild {{ loop.index }}" loading="lazy">
+    </div>
+    {% endfor %}
+    {% if slider_bilder|length > 1 %}
+    <button class="bv-arrow bv-arrow-left" id="bvPrev" aria-label="Zurück">&#8249;</button>
+    <button class="bv-arrow bv-arrow-right" id="bvNext" aria-label="Vor">&#8250;</button>
+    <div class="bv-dots" id="bvDots">
+      {% for bild in slider_bilder %}
+      <div class="bv-dot {{ 'active' if loop.first }}" data-idx="{{ loop.index0 }}"></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {# ─────────────────────────────────────────────────────────── #}
+
+  <div class="text-muted text-small uppercase" style="margin-bottom:6px;">{{ t('meine_verfahren') }}</div>
+  <div class="page-heading">{{ t('bieter_titel') }}</div>
+
+  {% if objekte_info %}
+  <div class="obj-cards">
+    {% for info in objekte_info %}
+    {% set obj = info.objekt %}
+    <a href="{{ url_for('bieter.objekt_detail', objekt_id=obj.id) }}" style="text-decoration:none;color:inherit;">
+      <div class="obj-card">
+        <div class="obj-card-img" style="{{ 'background:var(--mid)' if not info.nda_ok }}">
+          <span>{{ loop.index | roman }}</span>
+        </div>
+        <div class="obj-card-body">
+          <div class="obj-card-title {{ 'text-muted' if not info.nda_ok }}">{{ obj.titel }}</div>
+          <div class="obj-card-addr">{{ obj.plz }} {{ obj.ort }}{% if obj.flaeche_m2 %} · {{ obj.flaeche_m2|int }} m²{% endif %}</div>
+          <div class="obj-card-row">
+            <div>
+              {% if not info.nda_ok %}
+                <div style="font-size:11px; color:var(--muted);">{{ t('nda_ausstehend') }}</div>
+              {% elif info.hoechstgebot %}
+                <div class="obj-price">{{ info.hoechstgebot|euro }}</div>
+                <div class="obj-price-label">{{ t('hoechstgebot') }}</div>
+              {% else %}
+                <div class="obj-price-label">{{ t('noch_kein_gebot') }}</div>
+                <div style="font-size:11px;">{{ obj.startpreis|euro }}</div>
+              {% endif %}
+            </div>
+            {% set status = obj.status_label() %}
+            {% if not info.nda_ok %}
+              <span class="badge badge-prep">NDA ⏳</span>
+            {% elif status == 'aktiv' %}
+              <span class="badge badge-active">{{ t('aktiv') }}</span>
+            {% elif status == 'endet_bald' %}
+              <span class="badge badge-warn">{{ t('endet_bald') }}</span>
+            {% else %}
+              <span class="badge badge-done">{{ t('beendet') }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="padding: 48px 0; color: var(--muted); font-size: 13px;">
+    Sie haben noch keinen Zugang zu einem Bieterverfahren. Bitte warten Sie auf eine Einladung.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if slider_bilder and slider_bilder|length > 1 %}
+<script>
+(function() {
+  const slides = document.querySelectorAll('#bvSlider .bv-slide');
+  const dots   = document.querySelectorAll('#bvDots .bv-dot');
+  let current  = 0;
+  let timer;
+
+  function goTo(idx) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = (idx + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  function startAuto() {
+    timer = setInterval(next, 4000);
+  }
+  function resetAuto() {
+    clearInterval(timer);
+    startAuto();
+  }
+
+  document.getElementById('bvNext').addEventListener('click', function() { next(); resetAuto(); });
+  document.getElementById('bvPrev').addEventListener('click', function() { prev(); resetAuto(); });
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() { goTo(parseInt(this.dataset.idx)); resetAuto(); });
+  });
+
+  startAuto();
+})();
+</script>
+{% endif %}
+{% endblock %}
