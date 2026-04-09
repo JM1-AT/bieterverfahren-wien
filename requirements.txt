@@ -11,3 +11,5 @@ cryptography
 APScheduler
 python-dotenv
 Pillow
+openpyxl
+gunicorn
