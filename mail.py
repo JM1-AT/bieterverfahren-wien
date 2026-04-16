@@ -1,9 +1,12 @@
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import current_app
 from datetime import datetime
 
 
 def _print_mail(betreff, empfaenger, inhalt):
-    """Test-Modus: E-Mail in Console ausgeben statt senden."""
+    """Console-Ausgabe im Test-Modus."""
     print('\n' + '='*60)
     print(f'📧 E-MAIL (TEST-MODUS)')
     print(f'   An:      {empfaenger}')
@@ -12,6 +15,42 @@ def _print_mail(betreff, empfaenger, inhalt):
     print('-'*60)
     print(inhalt)
     print('='*60 + '\n')
+
+
+def _send_mail(betreff, empfaenger, inhalt):
+    """E-Mail senden – SMTP in Produktion, Console im Test-Modus."""
+    if current_app.config.get('MAIL_TEST_MODE', True):
+        _print_mail(betreff, empfaenger, inhalt)
+        return
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = betreff
+        msg['From']    = current_app.config['MAIL_DEFAULT_SENDER']
+        msg['To']      = empfaenger
+        msg.attach(MIMEText(inhalt, 'plain', 'utf-8'))
+
+        server = smtplib.SMTP(
+            current_app.config['MAIL_SERVER'],
+            current_app.config['MAIL_PORT'],
+            timeout=10
+        )
+        server.ehlo()
+        server.starttls()
+        server.login(
+            current_app.config['MAIL_USERNAME'],
+            current_app.config['MAIL_PASSWORD']
+        )
+        server.sendmail(
+            current_app.config['MAIL_DEFAULT_SENDER'],
+            empfaenger,
+            msg.as_string()
+        )
+        server.quit()
+        print(f'[Mail] ✓ Gesendet an {empfaenger}: {betreff}')
+    except Exception as e:
+        print(f'[Mail] ✗ Fehler beim Senden an {empfaenger}: {e}')
+        _print_mail(betreff, empfaenger, inhalt)
 
 
 def mail_verfahren_startet(bieter_email, bieter_name, objekt_titel, startpreis, ende):
@@ -29,7 +68,7 @@ Melden Sie sich auf der Plattform an, um Ihre Unterlagen einzusehen und ein Gebo
 
 Mit freundlichen Grüßen
 Bieterverfahren Wien"""
-    _print_mail(betreff, bieter_email, inhalt)
+    _send_mail(betreff, bieter_email, inhalt)
 
 
 def mail_gebot_ueberboten(bieter_email, bieter_name, objekt_titel, neues_hoechstgebot):
@@ -48,7 +87,7 @@ Möchten Sie ein neues Gebot abgeben? Melden Sie sich auf der Plattform an.
 
 Mit freundlichen Grüßen
 Bieterverfahren Wien"""
-    _print_mail(betreff, bieter_email, inhalt)
+    _send_mail(betreff, bieter_email, inhalt)
 
 
 def mail_verfahren_endet_bald(bieter_email, bieter_name, objekt_titel, hoechstgebot, ende):
@@ -67,7 +106,7 @@ Dies ist Ihre letzte Möglichkeit, ein Gebot abzugeben.
 
 Mit freundlichen Grüßen
 Bieterverfahren Wien"""
-    _print_mail(betreff, bieter_email, inhalt)
+    _send_mail(betreff, bieter_email, inhalt)
 
 
 def mail_verfahren_beendet_bieter(bieter_email, bieter_name, objekt_titel, hoechstgebot):
@@ -86,7 +125,7 @@ Vielen Dank für Ihre Teilnahme. Bei Fragen wenden Sie sich bitte an unser Büro
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, bieter_email, inhalt)
+    _send_mail(betreff, bieter_email, inhalt)
 
 
 def mail_verfahren_beendet_admin(admin_email, objekt_titel, hoechstgebot,
@@ -107,7 +146,7 @@ E-Mail:  {gewinner_email or '–'}
 Firma:   {gewinner_firma or '–'}
 
 Bitte nehmen Sie Kontakt mit dem Gewinner auf."""
-    _print_mail(betreff, admin_email, inhalt)
+    _send_mail(betreff, admin_email, inhalt)
 
 
 def mail_einladung(empfaenger_email, empfaenger_name, einladungslink):
@@ -128,7 +167,7 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, empfaenger_email, inhalt)
+    _send_mail(betreff, empfaenger_email, inhalt)
 
 
 def mail_anfrage_bestaetigt(empfaenger_email, empfaenger_name, einladungslink):
@@ -147,7 +186,7 @@ Dieser Link ist 72 Stunden gültig.
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, empfaenger_email, inhalt)
+    _send_mail(betreff, empfaenger_email, inhalt)
 
 
 def mail_anfrage_abgelehnt(empfaenger_email, empfaenger_name):
@@ -164,7 +203,7 @@ Bei Fragen wenden Sie sich bitte direkt an unser Büro.
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, empfaenger_email, inhalt)
+    _send_mail(betreff, empfaenger_email, inhalt)
 
 
 def mail_passwort_reset(empfaenger_email, empfaenger_name, reset_link):
@@ -183,7 +222,7 @@ Dieser Link ist 1 Stunde gültig. Falls Sie keine Anfrage gestellt haben, könne
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, empfaenger_email, inhalt)
+    _send_mail(betreff, empfaenger_email, inhalt)
 
 
 def mail_gebot_bestaetigung(bieter_email, bieter_name, objekt_titel, betrag):
@@ -202,4 +241,4 @@ Sie werden benachrichtigt, falls Ihr Gebot überboten wird.
 Mit freundlichen Grüßen
 Bieterverfahren Wien
 RA Mag. Werner Maierhofer"""
-    _print_mail(betreff, bieter_email, inhalt)
+    _send_mail(betreff, bieter_email, inhalt)

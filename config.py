@@ -1,5 +1,4 @@
 import os
-from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -42,14 +41,14 @@ class Config:
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 
-    # E-Mail (Test-Modus: print() in Console)
-    MAIL_TEST_MODE = True
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.example.com')
+    # E-Mail – Test-Modus nur lokal, in Produktion echter Versand
+    MAIL_TEST_MODE = not IS_PROD
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@bieterverfahren.at')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'office@bieterverfahrenwien.at')
 
     # Backup-Einstellungen
     BACKUP_FOLDER = os.path.join(BASE_DIR, 'backups')
