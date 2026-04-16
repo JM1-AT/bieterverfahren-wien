@@ -1,0 +1,230 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Objekt bearbeiten{% endblock %}
+{% block topbar_title %}Objekt bearbeiten – {{ objekt.titel }}{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('admin.objekt_bearbeiten', objekt_id=objekt.id) }}">
+
+  {# GRUNDDATEN #}
+  <div class="form-section">
+    <div class="form-section-title">Grunddaten</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('geschaeftsbeziehung') }}</label>
+      <select class="form-select" name="geschaeftsbeziehung">
+        <option value="B2C" {{ 'selected' if objekt.geschaeftsbeziehung == 'B2C' }}>B2C</option>
+        <option value="B2B" {{ 'selected' if objekt.geschaeftsbeziehung == 'B2B' }}>B2B</option>
+      </select>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('titel_immobilie') }} *</label>
+        <input class="form-input" type="text" name="titel" value="{{ objekt.titel }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('objektnummer') }}</label>
+        <input class="form-input" type="text" name="objektnummer" value="{{ objekt.objektnummer or '' }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ t('flaeche_m2') }}</label>
+      <input class="form-input" type="number" name="flaeche_m2" step="0.01" value="{{ objekt.flaeche_m2 or '' }}">
+    </div>
+  </div>
+
+  {# ADRESSE #}
+  <div class="form-section">
+    <div class="form-section-title">Adresse</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('strasse') }} *</label>
+      <input class="form-input" type="text" name="strasse" value="{{ objekt.strasse }}" required>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label">{{ t('plz') }} *</label>
+        <input class="form-input" type="text" name="plz" value="{{ objekt.plz }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('ort') }} *</label>
+        <input class="form-input" type="text" name="ort" value="{{ objekt.ort }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('land') }}</label>
+        <input class="form-input" type="text" name="land" value="{{ objekt.land }}">
+      </div>
+    </div>
+  </div>
+
+  {# BESCHREIBUNG #}
+  <div class="form-section">
+    <div class="form-section-title">Beschreibung</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('beschreibung') }} *</label>
+      <textarea class="form-textarea" name="beschreibung" rows="5" required>{{ objekt.beschreibung }}</textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('link_detail') }}</label>
+        <input class="form-input" type="url" name="link_detailbeschreibung" value="{{ objekt.link_detailbeschreibung or '' }}" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('link_3d') }}</label>
+        <input class="form-input" type="url" name="link_3d_rundgang" value="{{ objekt.link_3d_rundgang or '' }}" placeholder="https://...">
+      </div>
+    </div>
+  </div>
+
+  {# ZEITRAUM #}
+  <div class="form-section">
+    <div class="form-section-title">Verfahrenszeitraum</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('beginn') }}</label>
+        <input class="form-input" type="datetime-local" name="beginn"
+               value="{{ objekt.beginn.strftime('%Y-%m-%dT%H:%M') if objekt.beginn else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('ende') }}</label>
+        <input class="form-input" type="datetime-local" name="ende"
+               value="{{ objekt.ende.strftime('%Y-%m-%dT%H:%M') if objekt.ende else '' }}">
+      </div>
+    </div>
+  </div>
+
+  {# PREISE #}
+  <div class="form-section">
+    <div class="form-section-title">Preise</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('startpreis_label') }} *</label>
+        <input class="form-input" type="number" name="startpreis" step="1000" value="{{ objekt.startpreis|int }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('zielpreis_label') }}</label>
+        <input class="form-input" type="number" name="zielpreis" step="1000" value="{{ objekt.zielpreis|int if objekt.zielpreis else '' }}">
+      </div>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="sofortkauf_aktiv" id="sofortkauf" onchange="toggleSofortkauf()" {{ 'checked' if objekt.sofortkauf_aktiv }}>
+      <label for="sofortkauf">{{ t('sofortkauf') }}</label>
+    </div>
+    <div id="sofortkauf-preis" style="display:{{ 'block' if objekt.sofortkauf_aktiv else 'none' }};">
+      <div class="form-group">
+        <label class="form-label">{{ t('sofortkauf_preis') }}</label>
+        <input class="form-input" type="number" name="sofortkauf_preis" step="1000" value="{{ objekt.sofortkauf_preis|int if objekt.sofortkauf_preis else '' }}">
+      </div>
+    </div>
+  </div>
+
+  {# NEBENKOSTEN #}
+  <div class="form-section">
+    <div class="form-section-title">Nebenkosten</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('provision_label') }}</label>
+        <select class="form-select" name="maklerprovision">
+          <option value="3.0" {{ 'selected' if objekt.maklerprovision == 3.0 }}>3,0%</option>
+          <option value="2.5" {{ 'selected' if objekt.maklerprovision == 2.5 }}>2,5%</option>
+          <option value="2.0" {{ 'selected' if objekt.maklerprovision == 2.0 }}>2,0%</option>
+          <option value="0" {{ 'selected' if objekt.maklerprovision == 0 }}>Keine</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('notar_label') }}</label>
+        <select class="form-select" name="notarkosten">
+          <option value="1.5" {{ 'selected' if objekt.notarkosten == 1.5 }}>1,5%</option>
+          <option value="1.0" {{ 'selected' if objekt.notarkosten == 1.0 }}>1,0%</option>
+          <option value="2.0" {{ 'selected' if objekt.notarkosten == 2.0 }}>2,0%</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">{{ t('grunderwerb_label') }}</label>
+        <input class="form-input" type="number" name="grunderwerbssteuer" value="{{ objekt.grunderwerbssteuer }}" step="0.1">
+        <div class="form-checkbox mt-8">
+          <input type="checkbox" name="gew_nebenkosten_ausblenden" id="gew-ausbl" {{ 'checked' if objekt.gew_nebenkosten_ausblenden }}>
+          <label for="gew-ausbl">{{ t('nebenkosten_ausbl') }}</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('gb_label') }}</label>
+        <input class="form-input" type="number" name="grundbuch_gebuehr" value="{{ objekt.grundbuch_gebuehr }}" step="0.1">
+        <div class="form-checkbox mt-8">
+          <input type="checkbox" name="gb_nebenkosten_ausblenden" id="gb-ausbl" {{ 'checked' if objekt.gb_nebenkosten_ausblenden }}>
+          <label for="gb-ausbl">{{ t('gb_nebenkosten_ausbl') }}</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# MIETDATEN & EINHEITEN #}
+  <div class="form-section">
+    <div class="form-section-title">Mietdaten &amp; Einheiten</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Ist-Miete (monatlich, €)</label>
+        <input class="form-input" type="number" name="ist_miete" step="100" value="{{ objekt.ist_miete|int if objekt.ist_miete else '' }}" placeholder="z.B. 8500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Soll-Miete (monatlich, €)</label>
+        <input class="form-input" type="number" name="soll_miete" step="100" value="{{ objekt.soll_miete|int if objekt.soll_miete else '' }}" placeholder="z.B. 10200">
+      </div>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label">Einheiten befristet</label>
+        <input class="form-input" type="number" name="einheiten_befristet" min="0" value="{{ objekt.einheiten_befristet or 0 }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Einheiten unbefristet</label>
+        <input class="form-input" type="number" name="einheiten_unbefristet" min="0" value="{{ objekt.einheiten_unbefristet or 0 }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Einheiten leer</label>
+        <input class="form-input" type="number" name="einheiten_leerstand" min="0" value="{{ objekt.einheiten_leerstand or 0 }}">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="form-checkbox">
+        <input type="checkbox" name="rendite_sichtbar" id="rendite-sichtbar" {{ 'checked' if objekt.rendite_sichtbar }}>
+        <label for="rendite-sichtbar">Rendite für Bieter sichtbar</label>
+      </div>
+      <div class="form-checkbox" style="margin-top:8px;">
+        <input type="checkbox" name="objektdaten_sichtbar" id="objektdaten-sichtbar" {{ 'checked' if objekt.objektdaten_sichtbar }}>
+        <label for="objektdaten-sichtbar">Mietdaten &amp; Einheiten für Bieter sichtbar</label>
+      </div>
+    </div>
+  </div>
+
+  {# OPTIONEN #}
+  <div class="form-section">
+    <div class="form-section-title">Optionen</div>
+    <div class="form-group">
+      <label class="form-label">{{ t('zusatzvereinbarungen') }}</label>
+      <textarea class="form-textarea" name="zusatzvereinbarungen" rows="3">{{ objekt.zusatzvereinbarungen or '' }}</textarea>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="binding_bestaetigung_ausblenden" id="binding-ausbl" {{ 'checked' if objekt.binding_bestaetigung_ausblenden }}>
+      <label for="binding-ausbl">{{ t('binding_ausbl') }}</label>
+    </div>
+    <div class="form-checkbox">
+      <input type="checkbox" name="angebotsliste_ausblenden" id="angebots-ausbl" {{ 'checked' if objekt.angebotsliste_ausblenden }}>
+      <label for="angebots-ausbl">{{ t('angebotsliste_ausbl') }}</label>
+    </div>
+  </div>
+
+  <button type="submit" class="btn-primary">{{ t('speichern') }}</button>
+  &nbsp;
+  <a href="{{ url_for('admin.objekt_detail', objekt_id=objekt.id) }}" class="btn-secondary">Abbrechen</a>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleSofortkauf() {
+  const checked = document.getElementById('sofortkauf').checked;
+  document.getElementById('sofortkauf-preis').style.display = checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}

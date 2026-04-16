@@ -167,6 +167,25 @@ RA Mag. Werner Maierhofer"""
     _print_mail(betreff, empfaenger_email, inhalt)
 
 
+def mail_passwort_reset(empfaenger_email, empfaenger_name, reset_link):
+    """9. Passwort-Reset-Link senden (gültig 1 Stunde)."""
+    betreff = 'Passwort zurücksetzen – Bieterverfahren Wien'
+    inhalt = f"""Sehr geehrte/r {empfaenger_name},
+
+Sie haben eine Anfrage zum Zurücksetzen Ihres Passworts gestellt.
+
+Bitte klicken Sie auf folgenden Link, um ein neues Passwort zu vergeben:
+
+{reset_link}
+
+Dieser Link ist 1 Stunde gültig. Falls Sie keine Anfrage gestellt haben, können Sie diese E-Mail ignorieren.
+
+Mit freundlichen Grüßen
+Bieterverfahren Wien
+RA Mag. Werner Maierhofer"""
+    _print_mail(betreff, empfaenger_email, inhalt)
+
+
 def mail_gebot_bestaetigung(bieter_email, bieter_name, objekt_titel, betrag):
     """8. Gebot bestätigt → Bieter bekommt Bestätigung seines Gebots."""
     betreff = f'Gebot bestätigt: {objekt_titel}'

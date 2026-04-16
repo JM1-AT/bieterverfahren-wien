@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Passwort ändern – Bieterverfahren Wien{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <div class="form-page-title">Passwort ändern</div>
+  <div class="form-page-sub">Geben Sie Ihr aktuelles und das neue Passwort ein.</div>
+
+  <form method="POST" action="{{ url_for('auth.passwort_aendern') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+    <div class="form-group">
+      <label>Aktuelles Passwort</label>
+      <input type="password" name="passwort_aktuell" placeholder="Aktuelles Passwort" required autocomplete="current-password">
+    </div>
+    <div class="form-group">
+      <label>Neues Passwort</label>
+      <input type="password" name="passwort_neu" placeholder="Neues Passwort (min. 8 Zeichen)" required minlength="8" autocomplete="new-password">
+    </div>
+    <div class="form-group">
+      <label>Neues Passwort bestätigen</label>
+      <input type="password" name="passwort_bestaetigung" placeholder="Neues Passwort wiederholen" required minlength="8" autocomplete="new-password">
+    </div>
+    <button type="submit" class="btn-main" style="width:100%; margin-top:8px;">Passwort speichern</button>
+  </form>
+
+  <div style="text-align:center; margin-top:16px;">
+    {% if current_user.rolle == 'admin' %}
+    <a href="{{ url_for('admin.dashboard') }}" class="anfrage-link">← Zurück zum Dashboard</a>
+    {% else %}
+    <a href="{{ url_for('bieter.dashboard') }}" class="anfrage-link">← Zurück zum Dashboard</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

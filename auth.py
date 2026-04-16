@@ -1,6 +1,8 @@
+import base64
 import io
 import os
 import json
+import secrets
 import pyotp
 import qrcode
 import bcrypt
@@ -15,6 +17,15 @@ auth_bp = Blueprint('auth', __name__)
 
 
 # ─── Hilfsfunktionen ────────────────────────────────────────────────────────
+
+def _generate_totp_qr(email: str, secret: str) -> str:
+    """TOTP-QR-Code als Base64-PNG für ein Konto generieren."""
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=email, issuer_name='Bieterverfahren Wien'
+    )
+    buf = io.BytesIO()
+    qrcode.make(uri).save(buf, format='PNG')
+    return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 def passwort_hashen(passwort: str) -> str:
     """Passwort mit bcrypt hashen."""
@@ -81,12 +92,12 @@ def login():
             flash('Ihr Konto ist noch nicht freigeschaltet.', 'error')
             return render_template('landing.html')
 
-        # Admin braucht 2FA (nur wenn aktiviert)
-        if user.rolle == 'admin' and user.totp_aktiviert:
+        # 2FA prüfen (Admin und Bieter, falls aktiviert)
+        if user.totp_aktiviert:
             session['pending_user_id'] = user.id
-            return redirect(url_for('auth.zwei_fa_verify'))
-
-        # Admin ohne 2FA → direkt einloggen (2FA-Setup optional über Dashboard)
+            if user.rolle == 'admin':
+                return redirect(url_for('auth.zwei_fa_verify'))
+            return redirect(url_for('auth.bieter_zwei_fa_verify'))
 
         # Einloggen und zur richtigen Seite weiterleiten
         login_user(user, remember=True)
@@ -142,21 +153,9 @@ def zwei_fa_setup():
         else:
             flash(t('fehler_2fa'), 'error')
 
-    # Neues TOTP-Secret generieren
     totp_secret = pyotp.random_base32()
     session['totp_secret_temp'] = totp_secret
-
-    # QR-Code als Base64 generieren
-    totp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
-        name=user.email,
-        issuer_name='Bieterverfahren Wien'
-    )
-    qr = qrcode.make(totp_uri)
-    buf = io.BytesIO()
-    qr.save(buf, format='PNG')
-    import base64
-    qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-
+    qr_base64 = _generate_totp_qr(user.email, totp_secret)
     return render_template('admin/2fa_setup.html', qr_base64=qr_base64, totp_secret=totp_secret)
 
 
@@ -310,6 +309,170 @@ def nda_dokument():
         inhalt = f.read()
     return Response(inhalt, mimetype='application/pdf',
                     headers={'Content-Disposition': 'inline; filename=NDA_Bieterbedingungen.pdf'})
+
+
+# ─── Passwort vergessen ─────────────────────────────────────────────────────
+
+@auth_bp.route('/passwort-vergessen', methods=['GET', 'POST'])
+def passwort_vergessen():
+    """E-Mail eingeben → Reset-Link senden."""
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+
+        # Immer gleiche Meldung (kein User-Enumeration-Leak)
+        if user and user.passwort_hash:
+            token = secrets.token_urlsafe(32)
+            user.passwort_reset_token = token
+            user.passwort_reset_ablauf = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+
+            reset_link = url_for('auth.passwort_reset', token=token, _external=True)
+            from mail import mail_passwort_reset
+            mail_passwort_reset(user.email, user.name, reset_link)
+            audit_log_anonym('passwort_reset_angefordert', {'email': email})
+
+        flash('Falls diese E-Mail-Adresse registriert ist, erhalten Sie in Kürze einen Reset-Link.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('passwort_vergessen.html')
+
+
+@auth_bp.route('/passwort-reset/<token>', methods=['GET', 'POST'])
+def passwort_reset(token):
+    """Neues Passwort setzen via Token."""
+    user = User.query.filter_by(passwort_reset_token=token).first()
+
+    if not user or not user.passwort_reset_ablauf or datetime.utcnow() > user.passwort_reset_ablauf:
+        flash('Dieser Reset-Link ist ungültig oder abgelaufen.', 'error')
+        return redirect(url_for('auth.passwort_vergessen'))
+
+    if request.method == 'POST':
+        passwort = request.form.get('passwort', '')
+        passwort2 = request.form.get('passwort2', '')
+
+        if len(passwort) < 8:
+            flash('Das Passwort muss mindestens 8 Zeichen lang sein.', 'error')
+            return render_template('passwort_reset.html', token=token)
+
+        if passwort != passwort2:
+            flash('Die Passwörter stimmen nicht überein.', 'error')
+            return render_template('passwort_reset.html', token=token)
+
+        user.passwort_hash = passwort_hashen(passwort)
+        user.passwort_reset_token = None
+        user.passwort_reset_ablauf = None
+        db.session.commit()
+
+        audit_log_anonym('passwort_zurueckgesetzt', {'email': user.email})
+        flash('Ihr Passwort wurde erfolgreich geändert. Bitte melden Sie sich an.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('passwort_reset.html', token=token)
+
+
+# ─── 2FA für Bieter ─────────────────────────────────────────────────────────
+
+@auth_bp.route('/bieter/2fa/setup', methods=['GET', 'POST'])
+@login_required
+def bieter_zwei_fa_setup():
+    """2FA für Bieter einrichten."""
+    if current_user.rolle != 'bieter':
+        return redirect(url_for('bieter.dashboard'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        totp = pyotp.TOTP(session.get('totp_secret_temp', ''))
+
+        if totp.verify(code):
+            current_user.totp_secret = session.pop('totp_secret_temp', '')
+            current_user.totp_aktiviert = True
+            db.session.commit()
+            audit_log('2fa_eingerichtet')
+            flash('Zwei-Faktor-Authentifizierung wurde erfolgreich aktiviert.', 'success')
+            return redirect(url_for('bieter.dashboard'))
+        else:
+            flash(t('fehler_2fa'), 'error')
+
+    totp_secret = pyotp.random_base32()
+    session['totp_secret_temp'] = totp_secret
+    qr_base64 = _generate_totp_qr(current_user.email, totp_secret)
+    return render_template('bieter/2fa_setup.html', qr_base64=qr_base64, totp_secret=totp_secret)
+
+
+@auth_bp.route('/bieter/2fa/verify', methods=['GET', 'POST'])
+def bieter_zwei_fa_verify():
+    """2FA-Code beim Bieter-Login prüfen."""
+    user_id = session.get('pending_user_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    user = User.query.get(user_id)
+    if not user or user.rolle != 'bieter':
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        totp = pyotp.TOTP(user.totp_secret)
+
+        if totp.verify(code):
+            session.pop('pending_user_id', None)
+            login_user(user, remember=True)
+            user.letzter_login = datetime.utcnow()
+            db.session.commit()
+            audit_log('2fa_erfolgreich')
+            return redirect(url_for('bieter.dashboard'))
+        else:
+            audit_log_anonym('2fa_fehlgeschlagen', {'user_id': user_id})
+            flash(t('fehler_2fa'), 'error')
+
+    return render_template('bieter/2fa_verify.html')
+
+
+# ─── Passwort ändern (eingeloggt) ───────────────────────────────────────────
+
+@auth_bp.route('/passwort-aendern', methods=['GET', 'POST'])
+@login_required
+def passwort_aendern():
+    """Eingeloggter Nutzer kann sein Passwort ändern."""
+    if request.method == 'POST':
+        aktuell = request.form.get('passwort_aktuell', '')
+        neu = request.form.get('passwort_neu', '')
+        bestaetigung = request.form.get('passwort_bestaetigung', '')
+
+        if not current_user.passwort_hash or not passwort_pruefen(aktuell, current_user.passwort_hash):
+            flash('Das aktuelle Passwort ist falsch.', 'error')
+            return render_template('passwort_aendern.html')
+
+        if len(neu) < 8:
+            flash('Das neue Passwort muss mindestens 8 Zeichen lang sein.', 'error')
+            return render_template('passwort_aendern.html')
+
+        if neu != bestaetigung:
+            flash('Die neuen Passwörter stimmen nicht überein.', 'error')
+            return render_template('passwort_aendern.html')
+
+        current_user.passwort_hash = passwort_hashen(neu)
+        db.session.commit()
+        audit_log('passwort_geaendert')
+        flash('Passwort wurde erfolgreich geändert.', 'success')
+
+        if current_user.rolle == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('bieter.dashboard'))
+
+    return render_template('passwort_aendern.html')
+
+
+# ─── Öffentlicher Teilungslink ──────────────────────────────────────────────
+
+@auth_bp.route('/verfahren/<token>')
+def verfahren_teilen(token):
+    """Öffentliche Landingpage für geteiltes Verfahren.
+    Zeigt Basisinfos – Zugang muss aber separat vom Admin freigegeben werden."""
+    from models import Objekt
+    objekt = Objekt.query.filter_by(teilen_token=token).first_or_404()
+    return render_template('verfahren_teilen.html', objekt=objekt)
 
 
 # ─── Sprachumschalter ───────────────────────────────────────────────────────

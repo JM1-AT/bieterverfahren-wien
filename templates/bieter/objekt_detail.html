@@ -109,11 +109,11 @@
           <div class="gebot-input-wrap">
             <span class="gebot-euro">€</span>
             <input class="gebot-input" type="text" name="betrag" id="betrag-input"
-                   placeholder="{{ ((hoechstgebot or objekt.startpreis)|int + 1)|string }}"
+                   placeholder="{{ mindestgebot }}"
                    inputmode="numeric">
           </div>
           <div class="gebot-hint">
-            {{ t('gebot_hint') }}: {{ hoechstgebot|euro if hoechstgebot else objekt.startpreis|euro }}
+            {{ t('gebot_hint') }}: {{ mindestgebot|euro }}
           </div>
           {% if not objekt.binding_bestaetigung_ausblenden %}
           <div class="gebot-check">
@@ -139,6 +139,48 @@
       <div class="info-box mt-16">
         <div class="info-label">Objektbeschreibung</div>
         <div style="font-size:12px; line-height:1.7; color:var(--text); margin-top:6px;">{{ objekt.beschreibung }}</div>
+      </div>
+      {% endif %}
+
+      {# Rendite #}
+      {% if objekt.rendite_sichtbar and rendite is not none %}
+      <div class="rendite-card mt-16">
+        <div class="rendite-label">Rendite</div>
+        <div class="rendite-wert" id="rendite-display">{{ "%.2f"|format(rendite) }}%</div>
+        <div class="rendite-hint">Rendite ohne Nebenkosten</div>
+      </div>
+      {% endif %}
+
+      {# Mietdaten & Einheiten #}
+      {% if objekt.objektdaten_sichtbar %}
+      <div class="mietdaten-block mt-16">
+        <div class="info-label" style="margin-bottom:10px;">Objektdaten</div>
+        {% if objekt.ist_miete or objekt.soll_miete %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px;">
+          {% if objekt.ist_miete %}
+          <div class="stat-mini">
+            <div class="stat-mini-label">Ist-Miete/Monat</div>
+            <div class="stat-mini-val">{{ objekt.ist_miete|euro }}</div>
+          </div>
+          {% endif %}
+          {% if objekt.soll_miete %}
+          <div class="stat-mini">
+            <div class="stat-mini-label">Soll-Miete/Monat</div>
+            <div class="stat-mini-val">{{ objekt.soll_miete|euro }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if objekt.total_einheiten > 0 %}
+        <div class="chart-wrap">
+          <canvas id="einheitenChart" width="90" height="90"></canvas>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#2C3D47;"></span>Befristet ({{ objekt.einheiten_befristet or 0 }})</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#EAE0C8;"></span>Unbefristet ({{ objekt.einheiten_unbefristet or 0 }})</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#6B7C85;"></span>Leerstand ({{ objekt.einheiten_leerstand or 0 }})</div>
+          </div>
+        </div>
+        {% endif %}
       </div>
       {% endif %}
 
@@ -196,10 +238,84 @@ function countdown() {
   document.getElementById('ct-d').textContent = String(d).padStart(2, '0');
   document.getElementById('ct-h').textContent = String(h).padStart(2, '0');
   document.getElementById('ct-m').textContent = String(m).padStart(2, '0');
-  document.getElementById('ct-s').textContent = String(s).padStart(2, '0');
+  document.getElementById('ct-s').textContent = String(s).padStart(2, '00');
 }
 countdown();
 setInterval(countdown, 1000);
+</script>
+{% endif %}
+
+{% if objekt.rendite_sichtbar and objekt.soll_miete %}
+<script>
+const sollMiete = {{ objekt.soll_miete or 0 }};
+const renditeDisplay = document.getElementById('rendite-display');
+const betragInput = document.getElementById('betrag-input');
+
+function updateRendite() {
+  if (!renditeDisplay || !betragInput) return;
+  const raw = betragInput.value.replace(/\./g, '').replace(/,/g, '').trim();
+  const betrag = parseInt(raw);
+  if (betrag > 0 && sollMiete > 0) {
+    const r = (sollMiete * 12 / betrag * 100).toFixed(2);
+    renditeDisplay.textContent = r + '%';
+  }
+}
+
+if (betragInput) betragInput.addEventListener('input', updateRendite);
+</script>
+{% endif %}
+
+{% if objekt.objektdaten_sichtbar and objekt.total_einheiten > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const ctx = document.getElementById('einheitenChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Befristet', 'Unbefristet', 'Leerstand'],
+      datasets: [{
+        data: [{{ objekt.einheiten_befristet or 0 }}, {{ objekt.einheiten_unbefristet or 0 }}, {{ objekt.einheiten_leerstand or 0 }}],
+        backgroundColor: ['#2C3D47', '#EAE0C8', '#6B7C85'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+              return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% if objekt.objektdaten_sichtbar %}
+<script>
+document.querySelectorAll('[data-toggle-feld]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const objId = this.dataset.objId;
+    const feld = this.dataset.toggleFeld;
+    fetch(`/admin/objekte/${objId}/toggle/${feld}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        this.classList.toggle('toggle-on', data.wert);
+        this.classList.toggle('toggle-off', !data.wert);
+      });
+  });
+});
 </script>
 {% endif %}
 {% endblock %}

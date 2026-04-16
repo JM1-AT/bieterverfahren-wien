@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{{ objekt.titel }} – Bieterverfahren Wien{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <div class="form-page-title">{{ objekt.titel }}</div>
+  <div class="form-page-sub">{{ objekt.plz }} {{ objekt.ort }}, {{ objekt.strasse }}</div>
+
+  <div class="info-box" style="margin: 24px 0;">
+    <table style="width:100%; font-size:12px; border-collapse:collapse;">
+      {% if objekt.flaeche_m2 %}
+      <tr><td style="padding:6px 0; color:var(--muted);">Fläche</td><td style="padding:6px 0;">{{ objekt.flaeche_m2|int }} m²</td></tr>
+      {% endif %}
+      <tr><td style="padding:6px 0; color:var(--muted);">Startpreis</td><td style="padding:6px 0;">{{ objekt.startpreis|euro }}</td></tr>
+      {% if objekt.beginn %}
+      <tr><td style="padding:6px 0; color:var(--muted);">Beginn</td><td style="padding:6px 0;">{{ objekt.beginn|datum }}</td></tr>
+      {% endif %}
+      {% if objekt.ende %}
+      <tr><td style="padding:6px 0; color:var(--muted);">Ende</td><td style="padding:6px 0;">{{ objekt.ende|datum }}</td></tr>
+      {% endif %}
+      <tr><td style="padding:6px 0; color:var(--muted);">Typ</td><td style="padding:6px 0;">{{ objekt.geschaeftsbeziehung }}</td></tr>
+    </table>
+    {% if objekt.beschreibung %}
+    <div style="margin-top:12px; font-size:12px; color:var(--text); line-height:1.7;">{{ objekt.beschreibung }}</div>
+    {% endif %}
+  </div>
+
+  <div class="info-box" style="background: rgba(234,224,200,0.06); border: 0.5px solid var(--accent); padding:16px; margin-bottom:24px;">
+    <div style="font-size:11px; color:var(--accent); font-weight:500; margin-bottom:6px;">Hinweis</div>
+    <div style="font-size:12px; color:var(--muted); line-height:1.6;">
+      Die Teilnahme am Bieterverfahren erfordert eine persönliche Freigabe durch den Administrator.
+      Bitte beantragen Sie Ihren Zugang über das untenstehende Formular.
+    </div>
+  </div>
+
+  <a href="{{ url_for('auth.anfrage') }}" class="gebot-btn" style="display:block; text-align:center; text-decoration:none; padding:14px;">
+    Zugang anfragen
+  </a>
+  <div style="text-align:center; margin-top:12px;">
+    <a href="{{ url_for('auth.login') }}" class="text-muted text-small">Bereits registriert? Anmelden</a>
+  </div>
+</div>
+{% endblock %}

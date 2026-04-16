@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neues Passwort – Bieterverfahren Wien</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-logo">
+    <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien">
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<div class="hero" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+  <canvas id="netCanvas"></canvas>
+  <div style="position:relative; z-index:2; width:100%; max-width:400px; padding:0 24px;">
+    <div class="login-card">
+      <span class="login-card-label">Neues Passwort vergeben</span>
+      <form method="POST" action="{{ url_for('auth.passwort_reset', token=token) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        <input type="password" name="passwort" placeholder="Neues Passwort (min. 8 Zeichen)" required autocomplete="new-password" minlength="8">
+        <input type="password" name="passwort2" placeholder="Passwort wiederholen" required autocomplete="new-password" minlength="8">
+        <button type="submit" class="btn-main">Passwort speichern</button>
+      </form>
+      <a href="{{ url_for('auth.login') }}" class="anfrage-link">← Zurück zum Login</a>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='network.js') }}"></script>
+</body>
+</html>

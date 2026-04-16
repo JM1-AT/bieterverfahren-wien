@@ -116,7 +116,8 @@ def create_app():
     # Datenbank erstellen und Testdaten befüllen
     with app.app_context():
         db.create_all()
-        _testdaten_anlegen(app)
+        _migrate_db()
+        _testdaten_anlegen()
 
     # Scheduler starten
     from scheduler import scheduler_starten
@@ -125,7 +126,37 @@ def create_app():
     return app
 
 
-def _testdaten_anlegen(app):
+def _migrate_db():
+    """Neue Spalten sicher hinzufügen (idempotent – ignoriert Fehler wenn bereits vorhanden)."""
+    from sqlalchemy import text
+    objekt_cols = [
+        ('veroeffentlicht', 'BOOLEAN DEFAULT 0'),
+        ('teilen_token', 'VARCHAR(64)'),
+        ('ist_miete', 'REAL'),
+        ('soll_miete', 'REAL'),
+        ('einheiten_befristet', 'INTEGER DEFAULT 0'),
+        ('einheiten_unbefristet', 'INTEGER DEFAULT 0'),
+        ('einheiten_leerstand', 'INTEGER DEFAULT 0'),
+        ('rendite_sichtbar', 'BOOLEAN DEFAULT 0'),
+        ('objektdaten_sichtbar', 'BOOLEAN DEFAULT 0'),
+    ]
+    user_cols = [
+        ('passwort_reset_token', 'VARCHAR(100)'),
+        ('passwort_reset_ablauf', 'DATETIME'),
+    ]
+    def _add_columns(table: str, cols: list):
+        for col, typ in cols:
+            try:
+                db.session.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {typ}'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+    _add_columns('objekt', objekt_cols)
+    _add_columns('"user"', user_cols)
+
+
+def _testdaten_anlegen():
     """Testdaten beim ersten Start anlegen (nur wenn DB leer)."""
     if User.query.first():
         return  # Bereits Daten vorhanden
@@ -213,6 +244,7 @@ def _testdaten_anlegen(app):
         grunderwerbssteuer=3.5,
         grundbuch_gebuehr=1.1,
         aktiv=True,
+        veroeffentlicht=True,
         erstellt_von=admin.id
     )
     db.session.add(testobjekt)

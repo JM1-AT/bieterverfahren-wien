@@ -19,6 +19,8 @@ class User(UserMixin, db.Model):
     google_id = db.Column(db.String(255), unique=True)
     totp_secret = db.Column(db.String(64))
     totp_aktiviert = db.Column(db.Boolean, default=False)
+    passwort_reset_token = db.Column(db.String(100))
+    passwort_reset_ablauf = db.Column(db.DateTime)
     erstellt_am = db.Column(db.DateTime, default=datetime.utcnow)
     letzter_login = db.Column(db.DateTime)
 
@@ -75,6 +77,8 @@ class Objekt(db.Model):
     beginn = db.Column(db.DateTime)
     ende = db.Column(db.DateTime)
     aktiv = db.Column(db.Boolean, default=True)
+    veroeffentlicht = db.Column(db.Boolean, default=False)   # Entwurf bis Admin freigibt
+    teilen_token = db.Column(db.String(64), unique=True)     # Öffentlicher Teilungslink
 
     # Preise
     startpreis = db.Column(db.Float, nullable=False)
@@ -87,6 +91,17 @@ class Objekt(db.Model):
     notarkosten = db.Column(db.Float, default=1.5)
     grunderwerbssteuer = db.Column(db.Float, default=3.5)
     grundbuch_gebuehr = db.Column(db.Float, default=1.1)
+
+    # Mietdaten
+    ist_miete = db.Column(db.Float)           # monatliche Ist-Miete
+    soll_miete = db.Column(db.Float)          # monatliche Soll-Miete
+    einheiten_befristet = db.Column(db.Integer, default=0)
+    einheiten_unbefristet = db.Column(db.Integer, default=0)
+    einheiten_leerstand = db.Column(db.Integer, default=0)
+
+    # Sichtbarkeit für Bieter
+    rendite_sichtbar = db.Column(db.Boolean, default=False)
+    objektdaten_sichtbar = db.Column(db.Boolean, default=False)
 
     # Ausblenden-Flags
     gew_nebenkosten_ausblenden = db.Column(db.Boolean, default=False)
@@ -118,6 +133,19 @@ class Objekt(db.Model):
         if self.gebote:
             return max(g.betrag for g in self.gebote)
         return None
+
+    @property
+    def total_einheiten(self) -> int:
+        return (self.einheiten_befristet or 0) + (self.einheiten_unbefristet or 0) + (self.einheiten_leerstand or 0)
+
+    def rendite_berechnen(self, kaufpreis: float = None):
+        """Rendite auf Basis Soll-Miete × 12 / Kaufpreis. Gibt None zurück wenn Daten fehlen."""
+        if not self.soll_miete:
+            return None
+        preis = kaufpreis or self.hoechstgebot() or self.startpreis
+        if not preis:
+            return None
+        return round(self.soll_miete * 12 / preis * 100, 2)
 
     def ist_aktiv(self):
         """Gibt True zurück wenn das Verfahren gerade läuft."""

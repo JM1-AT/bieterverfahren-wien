@@ -15,12 +15,62 @@
       · Zielpreis (intern): {{ objekt.zielpreis|euro if objekt.zielpreis else '–' }}
     </div>
   </div>
-  {% set status = objekt.status_label() %}
-  {% if status == 'aktiv' %}<span class="badge badge-active">{{ t('aktiv') }}</span>
-  {% elif status == 'endet_bald' %}<span class="badge badge-warn">{{ t('endet_bald') }}</span>
-  {% elif status == 'vorbereitung' %}<span class="badge badge-prep">{{ t('vorbereitung') }}</span>
-  {% else %}<span class="badge badge-done">{{ t('beendet') }}</span>{% endif %}
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    {% if not objekt.veroeffentlicht %}
+    <span class="badge" style="background:rgba(180,140,60,0.2); color:#c8a84b; border:0.5px solid #c8a84b;">Entwurf</span>
+    {% else %}
+    {% set status = objekt.status_label() %}
+    {% if status == 'aktiv' %}<span class="badge badge-active">{{ t('aktiv') }}</span>
+    {% elif status == 'endet_bald' %}<span class="badge badge-warn">{{ t('endet_bald') }}</span>
+    {% elif status == 'vorbereitung' %}<span class="badge badge-prep">{{ t('vorbereitung') }}</span>
+    {% else %}<span class="badge badge-done">{{ t('beendet') }}</span>{% endif %}
+    {% endif %}
+    <a href="{{ url_for('admin.objekt_bearbeiten', objekt_id=objekt.id) }}" class="btn-secondary" style="font-size:11px; padding:4px 12px;">Bearbeiten</a>
+    {% if not objekt.veroeffentlicht %}
+    <form method="POST" action="{{ url_for('admin.objekt_veroeffentlichen', objekt_id=objekt.id) }}"
+          onsubmit="return confirm('Verfahren veröffentlichen? Bieter mit Zugang können es dann sehen.');">
+      <button type="submit" class="btn-ok" style="font-size:11px; padding:4px 12px;">✓ Veröffentlichen</button>
+    </form>
+    {% endif %}
+    {% if objekt.ist_aktiv() %}
+    <form method="POST" action="{{ url_for('admin.objekt_beenden', objekt_id=objekt.id) }}"
+          onsubmit="return confirm('Verfahren jetzt sofort beenden und archivieren? Diese Aktion kann nicht rückgängig gemacht werden.');">
+      <button type="submit" class="btn-danger" style="font-size:11px; padding:4px 12px;">⏹ Sofort beenden</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('admin.objekt_archiv_download', objekt_id=objekt.id) }}" class="btn-secondary" style="font-size:11px; padding:4px 12px;">↓ Archiv</a>
+  </div>
 </div>
+
+{# Mietdaten & Einheiten (Admin-Übersicht) #}
+{% if objekt.ist_miete or objekt.soll_miete or objekt.einheiten_befristet or objekt.einheiten_unbefristet or objekt.einheiten_leerstand %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-head">
+    <span class="card-title">Mietdaten &amp; Einheiten</span>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span style="font-size:10px; color:var(--muted);">Sichtbarkeit für Bieter:</span>
+      <button class="toggle-btn {{ 'toggle-on' if objekt.rendite_sichtbar else 'toggle-off' }}"
+              onclick="toggleFeld({{ objekt.id }}, 'rendite_sichtbar', this)"
+              title="Rendite sichtbar">Rendite</button>
+      <button class="toggle-btn {{ 'toggle-on' if objekt.objektdaten_sichtbar else 'toggle-off' }}"
+              onclick="toggleFeld({{ objekt.id }}, 'objektdaten_sichtbar', this)"
+              title="Mietdaten sichtbar">Daten</button>
+    </div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; padding:0 16px 16px;">
+    <div class="stat-mini"><div class="stat-mini-label">Ist-Miete/Monat</div><div class="stat-mini-val">{{ objekt.ist_miete|euro if objekt.ist_miete else '–' }}</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Soll-Miete/Monat</div><div class="stat-mini-val">{{ objekt.soll_miete|euro if objekt.soll_miete else '–' }}</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Jahresertrag (Soll)</div><div class="stat-mini-val">{{ (objekt.soll_miete * 12)|euro if objekt.soll_miete else '–' }}</div></div>
+    {% set rendite_admin = objekt.rendite_berechnen() %}
+    {% if rendite_admin %}
+    <div class="stat-mini"><div class="stat-mini-label">Rendite (auf HG)</div><div class="stat-mini-val">{{ "%.2f"|format(rendite_admin) }}%</div></div>
+    {% endif %}
+    <div class="stat-mini"><div class="stat-mini-label">Befristet</div><div class="stat-mini-val">{{ objekt.einheiten_befristet or 0 }}</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Unbefristet</div><div class="stat-mini-val">{{ objekt.einheiten_unbefristet or 0 }}</div></div>
+    <div class="stat-mini"><div class="stat-mini-label">Leerstand</div><div class="stat-mini-val">{{ objekt.einheiten_leerstand or 0 }}</div></div>
+  </div>
+</div>
+{% endif %}
 
 <div class="grid2">
 
@@ -146,6 +196,37 @@
   {% endif %}
 </div>
 
+{# Teilungslink #}
+<div class="card">
+  <div class="card-head">
+    <span class="card-title">Teilungslink</span>
+    {% if objekt.teilen_token %}<span class="badge badge-active">Link aktiv</span>{% endif %}
+  </div>
+  <div style="padding:16px; border-bottom:0.5px solid var(--line);">
+    <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">
+      Dieser Link zeigt eine öffentliche Seite mit Basisinfos zum Verfahren. Ein Zugang muss dennoch separat von Ihnen freigegeben werden.
+    </div>
+    {% if objekt.teilen_token %}
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <input type="text" readonly
+             value="{{ request.host_url.rstrip('/') }}{{ url_for('auth.verfahren_teilen', token=objekt.teilen_token) }}"
+             style="flex:1; font-size:11px; background:var(--card); border:0.5px solid var(--line); color:var(--accent); padding:6px 10px; border-radius:4px; min-width:0;"
+             onclick="this.select()">
+      <button onclick="navigator.clipboard.writeText(this.previousElementSibling.value); this.textContent='✓ Kopiert!'; setTimeout(()=>this.textContent='Kopieren',2000);"
+              class="btn-secondary" style="font-size:11px; padding:6px 12px; white-space:nowrap;">Kopieren</button>
+      <form method="POST" action="{{ url_for('admin.objekt_teilen_link', objekt_id=objekt.id) }}"
+            onsubmit="return confirm('Link neu generieren? Der alte Link wird ungültig.');" style="margin:0;">
+        <button type="submit" class="btn-secondary" style="font-size:11px; padding:6px 12px; white-space:nowrap;">Neu generieren</button>
+      </form>
+    </div>
+    {% else %}
+    <form method="POST" action="{{ url_for('admin.objekt_teilen_link', objekt_id=objekt.id) }}">
+      <button type="submit" class="btn-ok" style="font-size:11px; padding:6px 14px;">+ Link erstellen</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 {# Fotos #}
 <div class="card">
   <div class="card-head">
@@ -212,4 +293,17 @@
   {% endif %}
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleFeld(objId, feld, btn) {
+  fetch(`/admin/objekte/${objId}/toggle/${feld}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      btn.classList.toggle('toggle-on', data.wert);
+      btn.classList.toggle('toggle-off', !data.wert);
+    });
+}
+</script>
 {% endblock %}

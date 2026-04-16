@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}2FA einrichten{% endblock %}
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="twofa-page">
+  <div style="margin-bottom: 24px;">
+    <div class="nav-logo-box" style="margin: 0 auto 12px; width:40px; height:40px;"><span style="font-size:13px;">BV</span></div>
+    <div style="font-size:20px; font-weight:300; margin-bottom:4px;">{{ t('2fa_titel') }}</div>
+    <div class="text-muted" style="font-size:12px;">{{ t('2fa_anleitung') }}</div>
+  </div>
+
+  <div class="twofa-qr">
+    <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR-Code" style="width:200px; height:200px; margin:0 auto; border:4px solid #fff; border-radius:4px;">
+  </div>
+
+  <div class="twofa-secret">{{ totp_secret }}</div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for category, message in messages %}
+    <div class="flash {{ category }}" style="margin-bottom:16px;">{{ message }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('auth.bieter_zwei_fa_setup') }}">
+    <div class="form-group">
+      <label class="form-label">{{ t('2fa_code') }}</label>
+      <input class="form-input" type="text" name="code" maxlength="6" pattern="[0-9]{6}" required
+             autocomplete="one-time-code" autofocus placeholder="000000"
+             style="text-align:center; font-size:24px; letter-spacing:0.3em;">
+    </div>
+    <button type="submit" class="btn-primary" style="width:100%;">{{ t('2fa_btn') }}</button>
+  </form>
+
+  <div style="margin-top:16px;">
+    <a href="{{ url_for('bieter.dashboard') }}" class="text-muted text-small">← Zurück zum Dashboard</a>
+  </div>
+</div>
+{% endblock %}

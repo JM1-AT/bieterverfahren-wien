@@ -1,4 +1,5 @@
 import io
+import math
 import os
 from functools import wraps
 from flask import (Blueprint, render_template, request, redirect, url_for,
@@ -11,6 +12,9 @@ from auth import audit_log
 from i18n import t
 
 bieter_bp = Blueprint('bieter', __name__, url_prefix='/bieter')
+
+MIN_BID_INCREMENT = 1.03   # Jedes Folgegebot: mindestens +3%
+MAX_BID_INCREMENT = 50_000  # aber maximal +50.000 €
 
 
 # ─── Zugriffsschutz ─────────────────────────────────────────────────────────
@@ -54,7 +58,9 @@ def dashboard():
     # Alle Objekte mit Zugang für diesen Bieter
     zugaenge = ObjektZugang.query.filter_by(user_id=current_user.id).all()
     objekt_ids = [z.objekt_id for z in zugaenge]
-    objekte = Objekt.query.filter(Objekt.id.in_(objekt_ids)).all() if objekt_ids else []
+    objekte = Objekt.query.filter(
+        Objekt.id.in_(objekt_ids), Objekt.veroeffentlicht == True
+    ).all() if objekt_ids else []
 
     # NDA-Status pro Objekt
     objekte_info = []
@@ -84,6 +90,11 @@ def objekt_detail(objekt_id):
         flash('Sie haben keinen Zugang zu diesem Objekt.', 'error')
         return redirect(url_for('bieter.dashboard'))
 
+    # Nur veröffentlichte Objekte für Bieter sichtbar
+    if not objekt.veroeffentlicht:
+        flash('Dieses Verfahren ist noch nicht freigegeben.', 'error')
+        return redirect(url_for('bieter.dashboard'))
+
     # NDA prüfen – Modal anzeigen wenn nicht bestätigt
     nda_bestaetigt = _hat_nda_bestaetigt(current_user.id, objekt_id)
     if not nda_bestaetigt:
@@ -101,6 +112,15 @@ def objekt_detail(objekt_id):
     dokumente = Dokument.query.filter_by(objekt_id=objekt_id).all()
     fotos = ObjektFoto.query.filter_by(objekt_id=objekt_id).order_by(ObjektFoto.reihenfolge).all()
 
+    # Mindestgebot berechnen
+    if hoechstgebot is None:
+        mindestgebot = int(objekt.startpreis)
+    else:
+        zuschlag = min(math.ceil(hoechstgebot * MIN_BID_INCREMENT) - hoechstgebot, MAX_BID_INCREMENT)
+        mindestgebot = int(hoechstgebot) + int(zuschlag)
+
+    rendite = objekt.rendite_berechnen(hoechstgebot)
+
     # Nebenkosten berechnen (auf Basis Höchstgebot oder Startpreis)
     basis = hoechstgebot or objekt.startpreis
     nebenkosten = _nebenkosten_berechnen(objekt, basis)
@@ -110,6 +130,8 @@ def objekt_detail(objekt_id):
     return render_template('bieter/objekt_detail.html',
                            objekt=objekt,
                            hoechstgebot=hoechstgebot,
+                           mindestgebot=mindestgebot,
+                           rendite=rendite,
                            dokumente=dokumente,
                            fotos=fotos,
                            nebenkosten=nebenkosten)
@@ -220,13 +242,18 @@ def gebot_abgeben(objekt_id):
         flash(t('fehler_gebot'), 'error')
         return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
 
-    # Mindestgebot: über Startpreis und über Höchstgebot
+    # Mindestgebot: Startpreis erlaubt, danach +3% pro Runde
     hoechstgebot = objekt.hoechstgebot()
-    mindest = max(objekt.startpreis, hoechstgebot or 0)
-
-    if betrag <= mindest:
-        flash(t('fehler_gebot'), 'error')
-        return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
+    if hoechstgebot is None:
+        if betrag < int(objekt.startpreis):
+            flash(t('fehler_gebot'), 'error')
+            return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
+    else:
+        zuschlag = min(math.ceil(hoechstgebot * MIN_BID_INCREMENT) - hoechstgebot, MAX_BID_INCREMENT)
+        mindest = int(hoechstgebot) + int(zuschlag)
+        if betrag < mindest:
+            flash(t('fehler_gebot'), 'error')
+            return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
 
     # Binding-Bestätigung prüfen (falls nicht ausgeblendet)
     if not objekt.binding_bestaetigung_ausblenden:

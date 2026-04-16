@@ -183,6 +183,45 @@
     </div>
   </div>
 
+  {# MIETDATEN & EINHEITEN #}
+  <div class="form-section">
+    <div class="form-section-title">Mietdaten &amp; Einheiten</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Ist-Miete (monatlich, €)</label>
+        <input class="form-input" type="number" name="ist_miete" step="100" placeholder="z.B. 8500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Soll-Miete (monatlich, €)</label>
+        <input class="form-input" type="number" name="soll_miete" step="100" placeholder="z.B. 10200">
+      </div>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label">Einheiten befristet</label>
+        <input class="form-input" type="number" name="einheiten_befristet" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Einheiten unbefristet</label>
+        <input class="form-input" type="number" name="einheiten_unbefristet" min="0" value="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Einheiten leer</label>
+        <input class="form-input" type="number" name="einheiten_leerstand" min="0" value="0">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="form-checkbox">
+        <input type="checkbox" name="rendite_sichtbar" id="rendite-sichtbar">
+        <label for="rendite-sichtbar">Rendite für Bieter sichtbar</label>
+      </div>
+      <div class="form-checkbox" style="margin-top:8px;">
+        <input type="checkbox" name="objektdaten_sichtbar" id="objektdaten-sichtbar">
+        <label for="objektdaten-sichtbar">Mietdaten &amp; Einheiten für Bieter sichtbar</label>
+      </div>
+    </div>
+  </div>
+
   {# DOKUMENTE #}
   <div class="form-section">
     <div class="form-section-title">Dokumente</div>

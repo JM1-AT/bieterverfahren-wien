@@ -13,6 +13,42 @@ from auth import audit_log
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+ALLOWED_TOGGLE_FIELDS = {
+    'rendite_sichtbar', 'objektdaten_sichtbar', 'aktiv', 'veroeffentlicht',
+    'angebotsliste_ausblenden', 'binding_bestaetigung_ausblenden',
+    'gew_nebenkosten_ausblenden', 'gb_nebenkosten_ausblenden',
+}
+
+
+def _parse_form_dt(field: str):
+    """Datetime-Local-Eingabefeld parsen (toleriert fehlende Zeitangabe)."""
+    val = request.form.get(field, '').strip()
+    if not val:
+        return None
+    try:
+        return datetime.strptime(val, '%Y-%m-%dT%H:%M')
+    except ValueError:
+        try:
+            return datetime.strptime(val, '%Y-%m-%d')
+        except ValueError:
+            return None
+
+
+def _parse_form_float(field: str, default=None):
+    val = request.form.get(field, '').strip()
+    try:
+        return float(val) if val else default
+    except ValueError:
+        return default
+
+
+def _parse_form_int(field: str, default: int = 0) -> int:
+    val = request.form.get(field, '').strip()
+    try:
+        return int(val) if val else default
+    except ValueError:
+        return default
+
 
 # ─── Zugriffsschutz ─────────────────────────────────────────────────────────
 
@@ -108,24 +144,11 @@ def objekte():
 def objekt_neu():
     """Neues Objekt anlegen."""
     if request.method == 'POST':
-        # Datumsfelder parsen
-        def parse_dt(field):
-            val = request.form.get(field, '').strip()
-            if not val:
-                return None
-            try:
-                return datetime.strptime(val, '%Y-%m-%dT%H:%M')
-            except ValueError:
-                try:
-                    return datetime.strptime(val, '%Y-%m-%d')
-                except ValueError:
-                    return None
-
         objekt = Objekt(
             titel=request.form.get('titel', '').strip(),
             objektnummer=request.form.get('objektnummer', '').strip() or None,
             geschaeftsbeziehung=request.form.get('geschaeftsbeziehung', 'B2C'),
-            flaeche_m2=float(request.form.get('flaeche_m2') or 0) or None,
+            flaeche_m2=_parse_form_float('flaeche_m2'),
             strasse=request.form.get('strasse', '').strip(),
             plz=request.form.get('plz', '').strip(),
             ort=request.form.get('ort', '').strip(),
@@ -133,21 +156,28 @@ def objekt_neu():
             beschreibung=request.form.get('beschreibung', '').strip(),
             link_detailbeschreibung=request.form.get('link_detailbeschreibung', '').strip() or None,
             link_3d_rundgang=request.form.get('link_3d_rundgang', '').strip() or None,
-            beginn=parse_dt('beginn'),
-            ende=parse_dt('ende'),
-            startpreis=float(request.form.get('startpreis', 0)),
-            zielpreis=float(request.form.get('zielpreis') or 0) or None,
+            beginn=_parse_form_dt('beginn'),
+            ende=_parse_form_dt('ende'),
+            startpreis=_parse_form_float('startpreis', 0),
+            zielpreis=_parse_form_float('zielpreis'),
             sofortkauf_aktiv='sofortkauf_aktiv' in request.form,
-            sofortkauf_preis=float(request.form.get('sofortkauf_preis') or 0) or None,
-            maklerprovision=float(request.form.get('maklerprovision', 3.0)),
-            notarkosten=float(request.form.get('notarkosten', 1.5)),
-            grunderwerbssteuer=float(request.form.get('grunderwerbssteuer', 3.5)),
-            grundbuch_gebuehr=float(request.form.get('grundbuch_gebuehr', 1.1)),
+            sofortkauf_preis=_parse_form_float('sofortkauf_preis'),
+            maklerprovision=_parse_form_float('maklerprovision', 3.0),
+            notarkosten=_parse_form_float('notarkosten', 1.5),
+            grunderwerbssteuer=_parse_form_float('grunderwerbssteuer', 3.5),
+            grundbuch_gebuehr=_parse_form_float('grundbuch_gebuehr', 1.1),
             gew_nebenkosten_ausblenden='gew_nebenkosten_ausblenden' in request.form,
             gb_nebenkosten_ausblenden='gb_nebenkosten_ausblenden' in request.form,
             binding_bestaetigung_ausblenden='binding_bestaetigung_ausblenden' in request.form,
             angebotsliste_ausblenden='angebotsliste_ausblenden' in request.form,
             zusatzvereinbarungen=request.form.get('zusatzvereinbarungen', '').strip() or None,
+            ist_miete=_parse_form_float('ist_miete'),
+            soll_miete=_parse_form_float('soll_miete'),
+            einheiten_befristet=_parse_form_int('einheiten_befristet'),
+            einheiten_unbefristet=_parse_form_int('einheiten_unbefristet'),
+            einheiten_leerstand=_parse_form_int('einheiten_leerstand'),
+            rendite_sichtbar='rendite_sichtbar' in request.form,
+            objektdaten_sichtbar='objektdaten_sichtbar' in request.form,
             erstellt_von=current_user.id,
             aktiv=True
         )
@@ -197,6 +227,96 @@ def objekt_detail(objekt_id):
                            eingeladene_ids=eingeladene_ids,
                            fotos=fotos,
                            nda_pdf=nda_pdf)
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/bearbeiten', methods=['GET', 'POST'])
+@admin_required
+def objekt_bearbeiten(objekt_id):
+    """Bestehendes Objekt bearbeiten."""
+    objekt = Objekt.query.get_or_404(objekt_id)
+
+    if request.method == 'POST':
+        objekt.titel = request.form.get('titel', '').strip()
+        objekt.objektnummer = request.form.get('objektnummer', '').strip() or None
+        objekt.geschaeftsbeziehung = request.form.get('geschaeftsbeziehung', 'B2C')
+        objekt.flaeche_m2 = _parse_form_float('flaeche_m2')
+        objekt.strasse = request.form.get('strasse', '').strip()
+        objekt.plz = request.form.get('plz', '').strip()
+        objekt.ort = request.form.get('ort', '').strip()
+        objekt.land = request.form.get('land', 'Österreich').strip()
+        objekt.beschreibung = request.form.get('beschreibung', '').strip()
+        objekt.link_detailbeschreibung = request.form.get('link_detailbeschreibung', '').strip() or None
+        objekt.link_3d_rundgang = request.form.get('link_3d_rundgang', '').strip() or None
+        objekt.beginn = _parse_form_dt('beginn')
+        objekt.ende = _parse_form_dt('ende')
+        objekt.startpreis = _parse_form_float('startpreis', 0)
+        objekt.zielpreis = _parse_form_float('zielpreis')
+        objekt.sofortkauf_aktiv = 'sofortkauf_aktiv' in request.form
+        objekt.sofortkauf_preis = _parse_form_float('sofortkauf_preis')
+        objekt.maklerprovision = _parse_form_float('maklerprovision', 3.0)
+        objekt.notarkosten = _parse_form_float('notarkosten', 1.5)
+        objekt.grunderwerbssteuer = _parse_form_float('grunderwerbssteuer', 3.5)
+        objekt.grundbuch_gebuehr = _parse_form_float('grundbuch_gebuehr', 1.1)
+        objekt.gew_nebenkosten_ausblenden = 'gew_nebenkosten_ausblenden' in request.form
+        objekt.gb_nebenkosten_ausblenden = 'gb_nebenkosten_ausblenden' in request.form
+        objekt.binding_bestaetigung_ausblenden = 'binding_bestaetigung_ausblenden' in request.form
+        objekt.angebotsliste_ausblenden = 'angebotsliste_ausblenden' in request.form
+        objekt.zusatzvereinbarungen = request.form.get('zusatzvereinbarungen', '').strip() or None
+        objekt.ist_miete = _parse_form_float('ist_miete')
+        objekt.soll_miete = _parse_form_float('soll_miete')
+        objekt.einheiten_befristet = _parse_form_int('einheiten_befristet')
+        objekt.einheiten_unbefristet = _parse_form_int('einheiten_unbefristet')
+        objekt.einheiten_leerstand = _parse_form_int('einheiten_leerstand')
+        objekt.rendite_sichtbar = 'rendite_sichtbar' in request.form
+        objekt.objektdaten_sichtbar = 'objektdaten_sichtbar' in request.form
+
+        db.session.commit()
+        audit_log('objekt_bearbeitet', {'titel': objekt.titel}, objekt_id=objekt_id)
+        flash(f'Objekt „{objekt.titel}" wurde gespeichert.', 'success')
+        return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+    return render_template('admin/objekt_bearbeiten.html', objekt=objekt)
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/toggle/<feld>', methods=['POST'])
+@admin_required
+def objekt_toggle(objekt_id, feld):
+    """Sichtbarkeits-Toggle für rendite_sichtbar und objektdaten_sichtbar."""
+    from flask import jsonify
+    if feld not in ALLOWED_TOGGLE_FIELDS:
+        return jsonify({'error': 'Unbekanntes Feld'}), 400
+
+    objekt = Objekt.query.get_or_404(objekt_id)
+    aktuell = getattr(objekt, feld, False)
+    setattr(objekt, feld, not aktuell)
+    db.session.commit()
+    audit_log('objekt_toggle', {'feld': feld, 'wert': not aktuell}, objekt_id=objekt_id)
+    return jsonify({'feld': feld, 'wert': not aktuell})
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/veroeffentlichen', methods=['POST'])
+@admin_required
+def objekt_veroeffentlichen(objekt_id):
+    """Entwurf für Bieter freigeben (veröffentlichen)."""
+    objekt = Objekt.query.get_or_404(objekt_id)
+    objekt.veroeffentlicht = True
+    db.session.commit()
+    audit_log('objekt_veroeffentlicht', {'titel': objekt.titel}, objekt_id=objekt_id)
+    flash(f'Verfahren „{objekt.titel}" wurde veröffentlicht und ist für Bieter sichtbar.', 'success')
+    return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/teilen-link', methods=['POST'])
+@admin_required
+def objekt_teilen_link(objekt_id):
+    """Öffentlichen Teilungslink generieren (oder neu generieren)."""
+    import secrets as _secrets
+    objekt = Objekt.query.get_or_404(objekt_id)
+    objekt.teilen_token = _secrets.token_urlsafe(32)
+    db.session.commit()
+    audit_log('teilen_link_erstellt', {'titel': objekt.titel}, objekt_id=objekt_id)
+    flash('Teilungslink wurde erstellt.', 'success')
+    return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
 
 
 @admin_bp.route('/objekte/<int:objekt_id>/bieter-hinzufuegen', methods=['POST'])
@@ -776,3 +896,123 @@ def audit_log_export():
     audit_log('audit_export')
     return Response(generate(), mimetype='text/csv',
                     headers={'Content-Disposition': 'attachment; filename=audit_log.csv'})
+
+
+# ─── Verfahren beenden & archivieren ────────────────────────────────────────
+
+def _archiv_erstellen(objekt: Objekt) -> str:
+    """Erstellt ein JSON-Archiv des Verfahrens und gibt den Dateipfad zurück."""
+    import json as _json
+
+    gebote_data = []
+    for g in sorted(objekt.gebote, key=lambda x: x.betrag, reverse=True):
+        gebote_data.append({
+            'rang': len(gebote_data) + 1,
+            'betrag': g.betrag,
+            'bieter_name': g.bieter.name,
+            'bieter_email': g.bieter.email,
+            'bieter_firma': g.bieter.firma or '',
+            'zeitstempel': g.erstellt_am.strftime('%Y-%m-%d %H:%M:%S'),
+            'ip_adresse': g.ip_adresse or '',
+        })
+
+    nda_data = []
+    for zugang in objekt.zugaenge:
+        zust = Zustimmung.query.filter_by(
+            user_id=zugang.user_id, objekt_id=objekt.id
+        ).first()
+        nda_data.append({
+            'bieter_name': zugang.user.name,
+            'bieter_email': zugang.user.email,
+            'bieter_firma': zugang.user.firma or '',
+            'nda_bestaetigt': zust is not None,
+            'bestaetigt_am': zust.bestaetigt_am.strftime('%Y-%m-%d %H:%M:%S') if zust else None,
+            'ip_adresse': zust.ip_adresse if zust else None,
+            'version': zust.version if zust else None,
+            'text_hash': zust.text_hash if zust else None,
+        })
+
+    hoechstgebot = objekt.hoechstgebot()
+    archiv = {
+        'meta': {
+            'archiviert_am': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+            'archiviert_von': current_user.name,
+        },
+        'objekt': {
+            'titel': objekt.titel,
+            'objektnummer': objekt.objektnummer or '',
+            'adresse': f'{objekt.strasse}, {objekt.plz} {objekt.ort}',
+            'startpreis': objekt.startpreis,
+            'zielpreis': objekt.zielpreis,
+            'beginn': objekt.beginn.strftime('%Y-%m-%d %H:%M:%S') if objekt.beginn else None,
+            'ende': objekt.ende.strftime('%Y-%m-%d %H:%M:%S') if objekt.ende else None,
+        },
+        'ergebnis': {
+            'hoechstgebot': hoechstgebot,
+            'anzahl_gebote': len(objekt.gebote),
+            'anzahl_bieter': len(objekt.zugaenge),
+        },
+        'gebote': gebote_data,
+        'nda_bestaetigungen': nda_data,
+    }
+
+    # Ordner: uploads/archiv/<objektnummer oder id>/
+    kennung = objekt.objektnummer or f'objekt-{objekt.id}'
+    kennung = kennung.replace('/', '-').replace(' ', '_')
+    archiv_ordner = os.path.join(os.path.dirname(__file__), 'uploads', 'archiv', kennung)
+    os.makedirs(archiv_ordner, exist_ok=True)
+
+    zeitstempel = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    dateiname = f'verfahren_archiv_{zeitstempel}.json'
+    pfad = os.path.join(archiv_ordner, dateiname)
+
+    with open(pfad, 'w', encoding='utf-8') as f:
+        _json.dump(archiv, f, ensure_ascii=False, indent=2)
+
+    return pfad
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/beenden', methods=['POST'])
+@admin_required
+def objekt_beenden(objekt_id):
+    """Verfahren sofort beenden und archivieren."""
+    objekt = Objekt.query.get_or_404(objekt_id)
+
+    objekt.aktiv = False
+    objekt.ende = datetime.utcnow()
+    db.session.commit()
+
+    archiv_pfad = _archiv_erstellen(objekt)
+
+    audit_log('verfahren_beendet', {
+        'titel': objekt.titel,
+        'archiv': os.path.basename(archiv_pfad)
+    }, objekt_id=objekt_id)
+
+    flash(f'Verfahren „{objekt.titel}" wurde beendet und archiviert.', 'success')
+    return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/archiv')
+@admin_required
+def objekt_archiv_download(objekt_id):
+    """Letztes Archiv-JSON herunterladen."""
+    import json as _json
+    objekt = Objekt.query.get_or_404(objekt_id)
+
+    kennung = objekt.objektnummer or f'objekt-{objekt.id}'
+    kennung = kennung.replace('/', '-').replace(' ', '_')
+    archiv_ordner = os.path.join(os.path.dirname(__file__), 'uploads', 'archiv', kennung)
+
+    if not os.path.isdir(archiv_ordner):
+        flash('Noch kein Archiv vorhanden.', 'error')
+        return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+    dateien = sorted([f for f in os.listdir(archiv_ordner) if f.endswith('.json')], reverse=True)
+    if not dateien:
+        flash('Noch kein Archiv vorhanden.', 'error')
+        return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+    pfad = os.path.join(archiv_ordner, dateien[0])
+    audit_log('archiv_download', {'datei': dateien[0]}, objekt_id=objekt_id)
+    return send_file(pfad, as_attachment=True, download_name=dateien[0])
