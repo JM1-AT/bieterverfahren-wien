@@ -168,7 +168,7 @@ def _testdaten_anlegen():
 
     # ── Testaccounts ──────────────────────────────────────────────────────
 
-    # Admin
+    # Admin (Entwicklung)
     admin = User(
         email='admin@bieterverfahren.at',
         name='RA Maierhofer',
@@ -176,9 +176,21 @@ def _testdaten_anlegen():
         rolle='admin',
         status='aktiv',
         passwort_hash=passwort_hashen('admin123'),
-        totp_aktiviert=False  # 2FA für Tests deaktiviert
+        totp_aktiviert=False
     )
     db.session.add(admin)
+
+    # Admin (Produktion)
+    admin_prod = User(
+        email='office@bieterverfahrenwien.at',
+        name='RA Maierhofer',
+        firma='Bieterverfahren Wien',
+        rolle='admin',
+        status='aktiv',
+        passwort_hash=passwort_hashen('Kx7$mR2vQp'),
+        totp_aktiviert=False
+    )
+    db.session.add(admin_prod)
 
     # Bieter 1
     bieter1 = User(
@@ -263,7 +275,8 @@ def _testdaten_anlegen():
     db.session.commit()
 
     print('[App] Testdaten angelegt:')
-    print('  admin@bieterverfahren.at  / admin123   (Admin, 2FA deaktiviert)')
+    print('  admin@bieterverfahren.at       / admin123    (Admin, Entwicklung)')
+    print('  office@bieterverfahrenwien.at  / Kx7$mR2vQp  (Admin, Produktion)')
     print('  bieter1@bieterverfahren.at / bieter123  (Bieter, Zugang zu Testobjekt)')
     print('  bieter2@bieterverfahren.at / bieter456  (Bieter, Zugang zu Testobjekt)')
     print('  anfrage@bieterverfahren.at             (Status: ausstehend)')
