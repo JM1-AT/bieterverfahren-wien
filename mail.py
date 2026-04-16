@@ -18,39 +18,53 @@ def _print_mail(betreff, empfaenger, inhalt):
 
 
 def _send_mail(betreff, empfaenger, inhalt):
-    """E-Mail senden – SMTP in Produktion, Console im Test-Modus."""
+    """E-Mail senden – SMTP in Produktion, Console im Test-Modus.
+    Wirft bei Fehler eine Exception damit der Aufrufer reagieren kann."""
     if current_app.config.get('MAIL_TEST_MODE', True):
         _print_mail(betreff, empfaenger, inhalt)
         return
 
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = betreff
-        msg['From']    = current_app.config['MAIL_DEFAULT_SENDER']
-        msg['To']      = empfaenger
-        msg.attach(MIMEText(inhalt, 'plain', 'utf-8'))
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = betreff
+    msg['From']    = current_app.config['MAIL_DEFAULT_SENDER']
+    msg['To']      = empfaenger
+    msg.attach(MIMEText(inhalt, 'plain', 'utf-8'))
 
-        server = smtplib.SMTP(
-            current_app.config['MAIL_SERVER'],
-            current_app.config['MAIL_PORT'],
-            timeout=10
-        )
-        server.ehlo()
-        server.starttls()
-        server.login(
-            current_app.config['MAIL_USERNAME'],
-            current_app.config['MAIL_PASSWORD']
-        )
-        server.sendmail(
-            current_app.config['MAIL_DEFAULT_SENDER'],
-            empfaenger,
-            msg.as_string()
-        )
-        server.quit()
-        print(f'[Mail] ✓ Gesendet an {empfaenger}: {betreff}')
-    except Exception as e:
-        print(f'[Mail] ✗ Fehler beim Senden an {empfaenger}: {e}')
-        _print_mail(betreff, empfaenger, inhalt)
+    server = smtplib.SMTP(
+        current_app.config['MAIL_SERVER'],
+        current_app.config['MAIL_PORT'],
+        timeout=15
+    )
+    server.ehlo()
+    server.starttls()
+    server.login(
+        current_app.config['MAIL_USERNAME'],
+        current_app.config['MAIL_PASSWORD']
+    )
+    server.sendmail(
+        current_app.config['MAIL_DEFAULT_SENDER'],
+        empfaenger,
+        msg.as_string()
+    )
+    server.quit()
+    print(f'[Mail] ✓ Gesendet an {empfaenger}: {betreff}')
+
+
+def mail_test(empfaenger):
+    """Test-Mail senden um SMTP-Konfiguration zu prüfen."""
+    betreff = 'Test – Bieterverfahren Wien Mailversand'
+    inhalt = f"""Dies ist eine Test-Mail der Bieterverfahren Wien Plattform.
+
+Wenn Sie diese Nachricht erhalten, funktioniert der E-Mail-Versand korrekt.
+
+SMTP-Konfiguration:
+  Server: {current_app.config.get('MAIL_SERVER')}
+  Port:   {current_app.config.get('MAIL_PORT')}
+  User:   {current_app.config.get('MAIL_USERNAME')}
+
+Mit freundlichen Grüßen
+Bieterverfahren Wien"""
+    _send_mail(betreff, empfaenger, inhalt)
 
 
 def mail_verfahren_startet(bieter_email, bieter_name, objekt_titel, startpreis, ende):

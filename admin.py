@@ -8,7 +8,7 @@ from flask import (Blueprint, render_template, request, redirect, url_for,
 from flask_login import login_required, current_user
 from models import db, User, Objekt, Dokument, Gebot, ObjektZugang, Zustimmung, AuditLog, Einladung, ObjektFoto, SliderBild
 from security import verschluesseln, sicherer_dateiname, erlaubte_datei, upload_pfad, foto_pfad, objekt_nda_pfad, objekt_nda_vorhanden
-from mail import mail_einladung, mail_anfrage_bestaetigt, mail_anfrage_abgelehnt
+from mail import mail_einladung, mail_anfrage_bestaetigt, mail_anfrage_abgelehnt, mail_test
 from auth import audit_log
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -638,9 +638,13 @@ def nutzer_einladen():
         db.session.commit()
 
     link = _einladungslink_erstellen(email, name, current_user)
-    mail_einladung(email, name, link)
-    audit_log('einladung_gesendet', {'email': email})
-    flash(f'Einladungslink an {email} gesendet (siehe Console).', 'success')
+    try:
+        mail_einladung(email, name, link)
+        audit_log('einladung_gesendet', {'email': email})
+        flash(f'Einladung an {email} gesendet.', 'success')
+    except Exception as e:
+        audit_log('einladung_mail_fehler', {'email': email, 'fehler': str(e)})
+        flash(f'Einladungslink erstellt, aber E-Mail fehlgeschlagen: {e}', 'error')
     return redirect(url_for('admin.nutzer'))
 
 
@@ -738,6 +742,18 @@ def einstellungen():
 
     pdf_vorhanden = nda_pdf_vorhanden()
     return render_template('admin/einstellungen.html', pdf_vorhanden=pdf_vorhanden)
+
+
+@admin_bp.route('/einstellungen/mail-test', methods=['POST'])
+@admin_required
+def mail_test_senden():
+    """Test-Mail an die eigene Admin-Adresse senden."""
+    try:
+        mail_test(current_user.email)
+        flash(f'Test-Mail an {current_user.email} gesendet.', 'success')
+    except Exception as e:
+        flash(f'SMTP-Fehler: {e}', 'error')
+    return redirect(url_for('admin.einstellungen'))
 
 
 @admin_bp.route('/einstellungen/nda-loeschen', methods=['POST'])

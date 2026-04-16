@@ -10,4 +10,18 @@
     Gehen Sie zu einem Objekt → Abschnitt „NDA &amp; Bieterbedingungen".
   </div>
 </div>
+
+<div class="card" style="margin-top:24px">
+  <div class="card-head"><span class="card-title">E-Mail-Versand testen</span></div>
+  <div class="obj-row">
+    <p class="text-muted" style="margin-bottom:16px">
+      Sendet eine Test-Mail an <strong>{{ current_user.email }}</strong> um die SMTP-Konfiguration zu überprüfen.
+    </p>
+    <form method="POST" action="{{ url_for('admin.mail_test_senden') }}">
+      <button type="submit" class="btn btn-secondary">
+        📧 Test-Mail senden
+      </button>
+    </form>
+  </div>
+</div>
 {% endblock %}
