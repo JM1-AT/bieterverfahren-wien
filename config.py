@@ -24,7 +24,7 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 900   # 15 Minuten Inaktivität
 
     # Upload-Einstellungen
-    MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 MB
+    MAX_CONTENT_LENGTH = 3 * 1024 * 1024 * 1024  # 3 GB
     ALLOWED_EXTENSIONS = {'pdf', 'docx', 'xlsx', 'jpg', 'png'}
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 

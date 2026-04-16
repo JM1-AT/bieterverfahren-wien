@@ -113,6 +113,13 @@ def create_app():
     # Sicherheits-Header nach jedem Request
     app.after_request(security_headers)
 
+    # Datei zu groß (413)
+    @app.errorhandler(413)
+    def zu_gross(e):
+        from flask import request as req, flash as fl, redirect as rd, url_for as uf
+        fl('Die Datei ist zu groß. Maximale Dateigröße: 3 GB.', 'error')
+        return rd(req.referrer or uf('admin.dashboard'))
+
     # Datenbank erstellen und Testdaten befüllen
     with app.app_context():
         db.create_all()

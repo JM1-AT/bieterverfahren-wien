@@ -3,7 +3,7 @@ services:
     name: bieterverfahren-wien
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 120 --worker-class sync
     envVars:
       - key: FLASK_ENV
         value: production
