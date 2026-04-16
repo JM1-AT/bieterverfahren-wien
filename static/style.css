@@ -607,3 +607,78 @@ footer a:hover { color: var(--primary); }
 .toggle-on  { background: var(--primary); color: var(--accent); border-color: var(--primary); }
 .toggle-off { background: transparent; color: var(--muted); }
 .toggle-btn:hover { opacity: 0.8; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile & Tablet (max 768px)
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Admin Layout ── */
+  .admin-wrap { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0;
+    border-bottom: 0.5px solid rgba(234,224,200,0.1);
+    overflow-x: auto;
+  }
+  .sb-logo { border-bottom: none; border-right: 0.5px solid rgba(234,224,200,0.1); padding: 10px 14px; flex-shrink: 0; }
+  .sb-section { display: none; }
+  .sb-item { padding: 12px 12px; font-size: 10px; white-space: nowrap; border-left: none !important; border-bottom: 2px solid transparent; }
+  .sb-item.active { border-left: none !important; border-bottom: 2px solid var(--accent); background: rgba(234,224,200,0.06); }
+  .sidebar > div:last-child { margin-left: auto; padding: 8px 12px; }
+  .sidebar > div:last-child > div { display: none; }
+
+  .admin-main { overflow: visible; }
+  .content { padding: 14px; }
+
+  .topbar { padding: 0 14px; height: 44px; }
+  .topbar-user { display: none; }
+  .lang-switch { font-size: 10px; }
+
+  /* ── Metriken ── */
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Admin Tabellen ── */
+  .card table { font-size: 11px; }
+  .card { overflow-x: auto; }
+
+  /* ── Flex-Between Stacking ── */
+  .flex-between { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+  .flex-between > div:last-child { flex-wrap: wrap; }
+
+  /* ── Bieter Layout ── */
+  .bieter-wrap { padding: 16px 16px; }
+  .obj-cards { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Countdown kleiner */
+  .ct { min-width: 36px; padding: 5px 8px; }
+  .ct-num { font-size: 15px; }
+
+  /* Gebot-Karte */
+  .gebot-card { padding: 16px; }
+
+  /* Mietdaten Donut */
+  .mietdaten-block { flex-direction: column; }
+
+  /* ── Bieter Top-Nav ── */
+  .nav { padding: 0 16px; flex-wrap: wrap; gap: 8px; }
+  .nav-links { gap: 14px; flex-wrap: wrap; }
+  .nav-links a { font-size: 9px; }
+  .nav-user { font-size: 10px; }
+
+  /* ── Login / Form Pages ── */
+  .form-page { margin: 40px auto; padding: 0 16px; }
+  .login-card { padding: 24px 20px; }
+
+  /* ── Tabellen horizontal scrollbar ── */
+  .table-wrap, .docs-list, .obj-list { overflow-x: auto; }
+  table { min-width: 480px; }
+
+  /* ── Buttons in Header ── */
+  .flex-between form, .flex-between a.btn-secondary, .flex-between button { font-size: 10px !important; padding: 4px 9px !important; }
+}
