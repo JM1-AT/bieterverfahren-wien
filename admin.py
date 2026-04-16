@@ -402,8 +402,11 @@ def objekt_nda_vorschau(objekt_id):
 def dokument_upload(objekt_id):
     """Dokumente zu einem Objekt hochladen."""
     Objekt.query.get_or_404(objekt_id)
-    _dokumente_hochladen(objekt_id, request.files.getlist('dokumente'))
-    flash('Dokumente wurden hochgeladen.', 'success')
+    try:
+        _dokumente_hochladen(objekt_id, request.files.getlist('dokumente'))
+        flash('Dokumente wurden hochgeladen.', 'success')
+    except Exception as e:
+        flash(f'Fehler beim Hochladen: {e}', 'error')
     return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
 
 

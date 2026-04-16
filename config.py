@@ -25,7 +25,8 @@ class Config:
 
     # Upload-Einstellungen
     MAX_CONTENT_LENGTH = 3 * 1024 * 1024 * 1024  # 3 GB
-    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'xlsx', 'jpg', 'png'}
+    ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+                          'jpg', 'jpeg', 'png', 'gif', 'zip', 'mp4', 'mov'}
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
     # Fernet-Verschlüsselung für Uploads

@@ -116,9 +116,11 @@ def create_app():
     # Datei zu groß (413)
     @app.errorhandler(413)
     def zu_gross(e):
-        from flask import request as req, flash as fl, redirect as rd, url_for as uf
-        fl('Die Datei ist zu groß. Maximale Dateigröße: 3 GB.', 'error')
-        return rd(req.referrer or uf('admin.dashboard'))
+        return '''<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <title>Datei zu groß</title></head><body style="font-family:sans-serif;padding:40px">
+        <h2>Datei zu groß</h2>
+        <p>Die Datei überschreitet das Limit. Bitte kleinere Dateien hochladen.</p>
+        <a href="javascript:history.back()">← Zurück</a></body></html>''', 413
 
     # Datenbank erstellen und Testdaten befüllen
     with app.app_context():
