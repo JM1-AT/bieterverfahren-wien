@@ -4,7 +4,9 @@
   const ctx = canvas.getContext('2d');
   const wrap = canvas.parentElement;
   let W, H, nodes;
-  const COUNT = 55, DIST = 130;
+  const isMobile = window.innerWidth < 768;
+  const COUNT = isMobile ? 25 : 55;
+  const DIST  = isMobile ? 80 : 130;
 
   function resize() {
     W = canvas.width = wrap.offsetWidth;
