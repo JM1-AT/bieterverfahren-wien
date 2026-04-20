@@ -171,13 +171,14 @@ def objekt_neu():
             binding_bestaetigung_ausblenden='binding_bestaetigung_ausblenden' in request.form,
             angebotsliste_ausblenden='angebotsliste_ausblenden' in request.form,
             zusatzvereinbarungen=request.form.get('zusatzvereinbarungen', '').strip() or None,
-            ist_miete=_parse_form_float('ist_miete'),
-            soll_miete=_parse_form_float('soll_miete'),
+            ist_miete=round(_parse_form_float('ist_miete') or 0, 2) or None,
+            soll_miete=round(_parse_form_float('soll_miete') or 0, 2) or None,
             einheiten_befristet=_parse_form_int('einheiten_befristet'),
             einheiten_unbefristet=_parse_form_int('einheiten_unbefristet'),
             einheiten_leerstand=_parse_form_int('einheiten_leerstand'),
             rendite_sichtbar='rendite_sichtbar' in request.form,
             objektdaten_sichtbar='objektdaten_sichtbar' in request.form,
+            mindestspread=_parse_form_float('mindestspread', 0),
             erstellt_von=current_user.id,
             aktiv=True
         )
@@ -262,13 +263,14 @@ def objekt_bearbeiten(objekt_id):
         objekt.binding_bestaetigung_ausblenden = 'binding_bestaetigung_ausblenden' in request.form
         objekt.angebotsliste_ausblenden = 'angebotsliste_ausblenden' in request.form
         objekt.zusatzvereinbarungen = request.form.get('zusatzvereinbarungen', '').strip() or None
-        objekt.ist_miete = _parse_form_float('ist_miete')
-        objekt.soll_miete = _parse_form_float('soll_miete')
+        objekt.ist_miete = round(_parse_form_float('ist_miete') or 0, 2) or None
+        objekt.soll_miete = round(_parse_form_float('soll_miete') or 0, 2) or None
         objekt.einheiten_befristet = _parse_form_int('einheiten_befristet')
         objekt.einheiten_unbefristet = _parse_form_int('einheiten_unbefristet')
         objekt.einheiten_leerstand = _parse_form_int('einheiten_leerstand')
         objekt.rendite_sichtbar = 'rendite_sichtbar' in request.form
         objekt.objektdaten_sichtbar = 'objektdaten_sichtbar' in request.form
+        objekt.mindestspread = _parse_form_float('mindestspread', 0)
 
         db.session.commit()
         audit_log('objekt_bearbeitet', {'titel': objekt.titel}, objekt_id=objekt_id)
@@ -352,6 +354,56 @@ def bieter_entfernen(objekt_id, user_id):
     db.session.commit()
     audit_log('bieter_entfernt', {'user_id': user_id}, objekt_id=objekt_id)
     flash('Bieter wurde entfernt.', 'success')
+    return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+
+@admin_bp.route('/objekte/<int:objekt_id>/bieter-masseneinladen', methods=['POST'])
+@admin_required
+def bieter_masseneinladen(objekt_id):
+    """Mehrere Bieter gleichzeitig per E-Mail einladen und Objektzugang erteilen."""
+    Objekt.query.get_or_404(objekt_id)
+    emails_raw = request.form.get('emails', '')
+    emails = [
+        e.strip().lower() for e in emails_raw.replace(',', '\n').split('\n')
+        if e.strip() and '@' in e.strip()
+    ]
+
+    if not emails:
+        flash('Keine gültigen E-Mail-Adressen gefunden.', 'error')
+        return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
+
+    eingeladen = 0
+    fehler = 0
+
+    for email in emails:
+        # Nutzer anlegen falls nicht vorhanden
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            name = email.split('@')[0].capitalize()
+            user = User(email=email, name=name, rolle='bieter', status='ausstehend')
+            db.session.add(user)
+            db.session.flush()
+
+        # Objektzugang erteilen falls noch nicht vorhanden
+        if not ObjektZugang.query.filter_by(objekt_id=objekt_id, user_id=user.id).first():
+            db.session.add(ObjektZugang(objekt_id=objekt_id, user_id=user.id))
+
+        # Einladungslink erstellen und Mail senden
+        link = _einladungslink_erstellen(email, user.name, current_user)
+        try:
+            mail_einladung(email, user.name, link)
+            eingeladen += 1
+        except Exception as e:
+            audit_log('einladung_mail_fehler', {'email': email, 'fehler': str(e)})
+            fehler += 1
+
+    db.session.commit()
+    audit_log('masseneinladung', {'objekt_id': objekt_id, 'eingeladen': eingeladen})
+
+    msg = f'{eingeladen} Einladung(en) gesendet.'
+    if fehler:
+        msg += f' {fehler} E-Mail(s) fehlgeschlagen (Einladungslink wurde trotzdem erstellt).'
+    flash(msg, 'success' if not fehler else 'error')
     return redirect(url_for('admin.objekt_detail', objekt_id=objekt_id))
 
 

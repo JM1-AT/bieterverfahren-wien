@@ -12,7 +12,7 @@ T = {
         # Landing / Login
         'hero_label':        'Bieterverfahren Wien',
         'hero_h1':           'Professionelle Bieterverfahren.\nTransparent & Sicher.',
-        'hero_sub':          'Bieterverfahren Wien begleitet Sie durch den gesamten Bieterprozess – von der Ausschreibung bis zum rechtssicheren Abschluss.',
+        'hero_sub':          'Bieterverfahren Wien begleitet Sie durch das gesamte Verfahren und ermöglicht mit der hauseigenen Software einen sicheren und digitalen Verkaufsprozess.',
         'login_label':       'Zugang zur Plattform',
         'login_email':       'E-Mail',
         'login_passwort':    'Passwort',
@@ -204,7 +204,7 @@ T = {
         # Landing / Login
         'hero_label':        'Bieterverfahren Wien',
         'hero_h1':           'Professional Bidding Procedures.\nTransparent & Secure.',
-        'hero_sub':          'Bieterverfahren Wien guides you through the entire bidding process – from listing to legally binding completion.',
+        'hero_sub':          'Bieterverfahren Wien guides you through the entire procedure and enables a secure and digital sales process with its proprietary software.',
         'login_label':       'Platform Access',
         'login_email':       'Email',
         'login_passwort':    'Password',

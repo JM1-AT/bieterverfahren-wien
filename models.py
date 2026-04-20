@@ -21,6 +21,18 @@ class User(UserMixin, db.Model):
     totp_aktiviert = db.Column(db.Boolean, default=False)
     passwort_reset_token = db.Column(db.String(100))
     passwort_reset_ablauf = db.Column(db.DateTime)
+
+    # Erweiterte Profildaten (optional)
+    firmenname   = db.Column(db.String(200))
+    adresse      = db.Column(db.String(300))
+    position     = db.Column(db.String(100))
+    mobilnummer  = db.Column(db.String(50))
+
+    # Benachrichtigungseinstellungen
+    benachrichtigung_email = db.Column(db.Boolean, default=True)
+    benachrichtigung_sms   = db.Column(db.Boolean, default=False)
+    benachrichtigung_push  = db.Column(db.Boolean, default=False)
+
     erstellt_am = db.Column(db.DateTime, default=datetime.utcnow)
     letzter_login = db.Column(db.DateTime)
 
@@ -91,6 +103,9 @@ class Objekt(db.Model):
     notarkosten = db.Column(db.Float, default=1.5)
     grunderwerbssteuer = db.Column(db.Float, default=3.5)
     grundbuch_gebuehr = db.Column(db.Float, default=1.1)
+
+    # Gebotsregeln
+    mindestspread = db.Column(db.Float, default=0)  # Mindest-Überbietung in € (0 = deaktiviert)
 
     # Mietdaten
     ist_miete = db.Column(db.Float)           # monatliche Ist-Miete
@@ -189,6 +204,7 @@ class Dokument(db.Model):
     groesse_kb = db.Column(db.Integer)
     verschluesselt = db.Column(db.Boolean, default=True)
     nur_eingeladene = db.Column(db.Boolean, default=True)  # Nur für Bieter mit Zugang
+    ist_nda = db.Column(db.Boolean, default=False)         # Als NDA-Dokument markiert
     hochgeladen_von = db.Column(db.Integer, db.ForeignKey('user.id'))
     hochgeladen_am = db.Column(db.DateTime, default=datetime.utcnow)
 

@@ -48,6 +48,28 @@ def _hat_nda_bestaetigt(user_id: int, objekt_id: int) -> bool:
     ).first() is not None
 
 
+# ─── Profil ─────────────────────────────────────────────────────────────────
+
+@bieter_bp.route('/profil', methods=['GET', 'POST'])
+@bieter_required
+def profil():
+    """Bieter-Profil anzeigen und bearbeiten."""
+    if request.method == 'POST':
+        current_user.name = request.form.get('name', '').strip() or current_user.name
+        current_user.firma = request.form.get('firma', '').strip() or None
+        current_user.firmenname = request.form.get('firmenname', '').strip() or None
+        current_user.position = request.form.get('position', '').strip() or None
+        current_user.adresse = request.form.get('adresse', '').strip() or None
+        current_user.mobilnummer = request.form.get('mobilnummer', '').strip() or None
+        current_user.benachrichtigung_email = 'benachrichtigung_email' in request.form
+        current_user.benachrichtigung_sms = 'benachrichtigung_sms' in request.form
+        current_user.benachrichtigung_push = 'benachrichtigung_push' in request.form
+        db.session.commit()
+        flash('Profil gespeichert.', 'success')
+        return redirect(url_for('bieter.profil'))
+    return render_template('bieter/profil.html')
+
+
 # ─── Dashboard ──────────────────────────────────────────────────────────────
 
 @bieter_bp.route('/')
@@ -255,6 +277,13 @@ def gebot_abgeben(objekt_id):
             flash(t('fehler_gebot'), 'error')
             return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
 
+    # Mindestspread-Validierung (fixer €-Betrag, überschreibt prozentuales Minimum wenn gesetzt)
+    if objekt.mindestspread and objekt.mindestspread > 0 and hoechstgebot is not None:
+        mindest_spread = int(hoechstgebot + objekt.mindestspread)
+        if betrag < mindest_spread:
+            flash(f'Mindestgebot: € {mindest_spread:,}'.replace(',', '.'), 'error')
+            return redirect(url_for('bieter.objekt_detail', objekt_id=objekt_id))
+
     # Binding-Bestätigung prüfen (falls nicht ausgeblendet)
     if not objekt.binding_bestaetigung_ausblenden:
         if not request.form.get('binding'):
@@ -332,10 +361,11 @@ def dokument_download(dok_id):
         'objekt_id': dok.objekt_id
     }, objekt_id=dok.objekt_id)
 
+    als_download = request.args.get('download') == '1'
     return send_file(
         io.BytesIO(inhalt),
         download_name=dok.original_name,
-        as_attachment=True
+        as_attachment=als_download
     )
 
 
@@ -371,8 +401,10 @@ def nda_pdf(objekt_id):
         abort(404)
     with open(pfad, 'rb') as f:
         inhalt = f.read()
+    als_download = request.args.get('download') == '1'
+    disposition = 'attachment' if als_download else 'inline'
     return Response(inhalt, mimetype='application/pdf',
-                    headers={'Content-Disposition': 'inline; filename=NDA_Bieterbedingungen.pdf'})
+                    headers={'Content-Disposition': f'{disposition}; filename=NDA_Bieterbedingungen.pdf'})
 
 
 # ─── Foto-Stream ─────────────────────────────────────────────────────────────

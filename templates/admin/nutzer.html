@@ -44,7 +44,11 @@
       <tr>
         <td><b>{{ user.name }}</b></td>
         <td class="text-muted">{{ user.email }}</td>
-        <td class="text-muted">{{ user.firma or '–' }}</td>
+        <td class="text-muted">
+          {{ user.firmenname or user.firma or '–' }}
+          {% if user.position %}<br><span style="font-size:10px; color:var(--muted);">{{ user.position }}</span>{% endif %}
+          {% if user.mobilnummer %}<br><span style="font-size:10px; color:var(--muted);">{{ user.mobilnummer }}</span>{% endif %}
+        </td>
         <td>
           <span class="badge {{ 'badge-active' if user.rolle == 'admin' else 'badge-prep' }}">
             {{ user.rolle|upper }}

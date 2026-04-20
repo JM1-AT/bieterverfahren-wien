@@ -133,9 +133,10 @@
     <span class="card-title">Bieter verwalten</span>
   </div>
   <div style="padding: 16px; border-bottom: 0.5px solid var(--line);">
+    {# Bestehenden Bieter hinzufügen #}
     <form method="POST" action="{{ url_for('admin.bieter_hinzufuegen', objekt_id=objekt.id) }}" class="flex gap-8">
       <select class="form-select" name="user_id" style="flex:1;">
-        <option value="">Bieter auswählen…</option>
+        <option value="">Bestehenden Bieter auswählen…</option>
         {% for bieter in alle_bieter %}
           {% if bieter.id not in eingeladene_ids %}
           <option value="{{ bieter.id }}">{{ bieter.name }} ({{ bieter.email }})</option>
@@ -144,6 +145,15 @@
       </select>
       <button type="submit" class="btn-ok" style="padding: 6px 14px; font-size:11px;">+ {{ t('einladen') }}</button>
     </form>
+
+    {# Mehrere neue Bieter per E-Mail einladen #}
+    <div style="margin-top:16px; padding-top:16px; border-top:0.5px solid var(--line);">
+      <div class="form-hint" style="font-size:11px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.08em;">Neue Bieter per E-Mail einladen</div>
+      <form method="POST" action="{{ url_for('admin.bieter_masseneinladen', objekt_id=objekt.id) }}">
+        <textarea name="emails" rows="3" class="form-textarea" style="font-size:12px;" placeholder="E-Mail-Adressen eingeben (eine pro Zeile oder kommagetrennt):&#10;bieter1@firma.at&#10;bieter2@firma.at, bieter3@firma.at"></textarea>
+        <button type="submit" class="btn-secondary" style="margin-top:8px; font-size:11px;">Alle einladen &amp; Zugang erteilen</button>
+      </form>
+    </div>
   </div>
   {% for eintrag in nda_uebersicht %}
   <div class="obj-row">

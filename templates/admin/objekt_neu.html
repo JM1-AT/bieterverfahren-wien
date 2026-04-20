@@ -122,6 +122,11 @@
         <input class="form-input" type="number" name="sofortkauf_preis" step="1000">
       </div>
     </div>
+    <div class="form-group" style="margin-top:12px;">
+      <label class="form-label">Mindestspread für Überbote (€)</label>
+      <input class="form-input" type="number" name="mindestspread" step="1" min="0" value="0">
+      <div class="form-hint" style="font-size:11px; color:var(--muted); margin-top:4px;">Das erste Gebot muss mindestens dem Startpreis entsprechen. Jedes weitere Gebot muss das Höchstgebot um diesen Betrag übertreffen. 0 = prozentuales Minimum (3%).</div>
+    </div>
   </div>
 
   {# NEBENKOSTEN #}
@@ -189,11 +194,11 @@
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Ist-Miete (monatlich, €)</label>
-        <input class="form-input" type="number" name="ist_miete" step="100" placeholder="z.B. 8500">
+        <input class="form-input" type="number" name="ist_miete" step="0.01" min="0" placeholder="z.B. 8500.00">
       </div>
       <div class="form-group">
         <label class="form-label">Soll-Miete (monatlich, €)</label>
-        <input class="form-input" type="number" name="soll_miete" step="100" placeholder="z.B. 10200">
+        <input class="form-input" type="number" name="soll_miete" step="0.01" min="0" placeholder="z.B. 10200.00">
       </div>
     </div>
     <div class="form-grid-3">

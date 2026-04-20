@@ -20,6 +20,18 @@ def _print_mail(betreff, empfaenger, inhalt):
 def _send_mail(betreff, empfaenger, inhalt):
     """E-Mail senden – SMTP in Produktion, Console im Test-Modus.
     Wirft bei Fehler eine Exception damit der Aufrufer reagieren kann."""
+    # Benachrichtigungseinstellungen prüfen
+    try:
+        from models import User
+        user = User.query.filter_by(email=empfaenger).first()
+        if user and user.benachrichtigung_email is False:
+            print(f'[Mail] ⏭ Übersprungen (E-Mail deaktiviert): {empfaenger}')
+            if current_app.config.get('MAIL_TEST_MODE', True) and getattr(user, 'benachrichtigung_sms', False):
+                print(f'[SMS] 📱 {empfaenger}: {betreff}')
+            return
+    except Exception:
+        pass  # Fehler beim DB-Check ignorieren – Mail trotzdem senden
+
     if current_app.config.get('MAIL_TEST_MODE', True):
         _print_mail(betreff, empfaenger, inhalt)
         return

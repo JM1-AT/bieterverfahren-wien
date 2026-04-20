@@ -24,7 +24,11 @@
     </div>
     {% if current_user.is_authenticated %}
     <div class="nav-user">
+      {% if current_user.rolle == 'bieter' %}
+      <a href="{{ url_for('bieter.profil') }}" style="color:var(--muted); font-size:11px; letter-spacing:0.06em;">{{ current_user.name }}</a>
+      {% else %}
       <span>{{ current_user.name }}</span>
+      {% endif %}
       &nbsp;·&nbsp;
       <a href="{{ url_for('auth.logout') }}">{{ t('nav_abmelden') }}</a>
     </div>
@@ -54,10 +58,13 @@
 {% block footer %}
 <footer>
   <div class="footer-left">
-    <div class="nav-logo-box"><span>BV</span></div>
+    <img src="{{ url_for('static', filename='assets/LOGO_BV.svg') }}" alt="Bieterverfahren Wien" height="40" style="display:block;">
     <span>{{ t('footer_copyright') }}</span>
   </div>
-  <a href="https://www.bieterverfahrenwien.at" target="_blank" rel="noopener">{{ t('footer_link') }}</a>
+  <div style="display:flex; gap:24px; align-items:center;">
+    <a href="{{ url_for('auth.impressum') }}" style="font-size:11px; letter-spacing:0.08em; color:var(--muted);">Impressum</a>
+    <a href="https://www.bieterverfahrenwien.at" target="_blank" rel="noopener">{{ t('footer_link') }}</a>
+  </div>
 </footer>
 {% endblock %}
 

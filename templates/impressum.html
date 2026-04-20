@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Impressum – Bieterverfahren Wien{% endblock %}
+
+{% block content %}
+<div class="form-page" style="max-width:680px; margin:60px auto; padding:0 16px;">
+  <div class="card">
+    <div class="card-head"><span class="card-title">Impressum</span></div>
+    <div class="obj-row" style="line-height:1.8; font-size:13px; color:var(--text);">
+
+      <p style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:16px;">Rechtlicher Hinweis</p>
+      <p>Bieterverfahren Wien ist eine Serviceleistung von RA Mag. Werner Maierhofer.</p>
+
+      <div style="margin-top:24px;">
+        <p><strong>Mag. Werner Maierhofer</strong></p>
+        <p>R-Code R147222</p>
+        <p>UID-Nr.: 61915869</p>
+        <p>Franz Josefs Kai 31/1/6c</p>
+        <p>1010 Wien</p>
+        <p style="margin-top:8px;"><a href="mailto:office@bieterverfahrenwien.at" style="color:var(--accent);">office@bieterverfahrenwien.at</a></p>
+        <p>01 3436 335</p>
+      </div>
+
+      <div style="margin-top:32px; border-top:0.5px solid var(--line); padding-top:24px;">
+        <p style="font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:12px;">Fotorechte</p>
+        <p>Objektfotos: Bruno Soric</p>
+        <p>Personenfotos: Max Manawi-Huber</p>
+      </div>
+
+    </div>
+  </div>
+  <div style="margin-top:16px; text-align:center;">
+    <a href="{{ url_for('auth.login') }}" class="text-muted text-small">← Zurück zur Startseite</a>
+  </div>
+</div>
+{% endblock %}

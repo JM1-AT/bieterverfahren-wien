@@ -148,10 +148,21 @@ def _migrate_db():
         ('einheiten_leerstand', 'INTEGER DEFAULT 0'),
         ('rendite_sichtbar', 'BOOLEAN DEFAULT 0'),
         ('objektdaten_sichtbar', 'BOOLEAN DEFAULT 0'),
+        ('mindestspread', 'REAL DEFAULT 0'),
     ]
     user_cols = [
         ('passwort_reset_token', 'VARCHAR(100)'),
         ('passwort_reset_ablauf', 'DATETIME'),
+        ('firmenname', 'VARCHAR(200)'),
+        ('adresse', 'VARCHAR(300)'),
+        ('position', 'VARCHAR(100)'),
+        ('mobilnummer', 'VARCHAR(50)'),
+        ('benachrichtigung_email', 'BOOLEAN DEFAULT 1'),
+        ('benachrichtigung_sms', 'BOOLEAN DEFAULT 0'),
+        ('benachrichtigung_push', 'BOOLEAN DEFAULT 0'),
+    ]
+    dok_cols = [
+        ('ist_nda', 'BOOLEAN DEFAULT 0'),
     ]
     def _add_columns(table: str, cols: list):
         for col, typ in cols:
@@ -163,6 +174,7 @@ def _migrate_db():
 
     _add_columns('objekt', objekt_cols)
     _add_columns('"user"', user_cols)
+    _add_columns('dokument', dok_cols)
 
 
 def _testdaten_anlegen():

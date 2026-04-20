@@ -35,6 +35,9 @@
       style="border:none; background:#fff;"
       title="NDA & Bieterbedingungen">
     </iframe>
+    <div style="text-align:right; margin-top:8px;">
+      <a href="{{ url_for('bieter.nda_pdf', objekt_id=objekt.id) }}?download=1" class="btn-download-nda">↓ NDA herunterladen</a>
+    </div>
     {% else %}
     {# ── Text-Modus: Scroll-Tracking ── #}
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>

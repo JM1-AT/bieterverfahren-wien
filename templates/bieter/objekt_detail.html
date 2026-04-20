@@ -173,7 +173,7 @@
         {% endif %}
         {% if objekt.total_einheiten > 0 %}
         <div class="chart-wrap">
-          <canvas id="einheitenChart" width="90" height="90"></canvas>
+          <canvas id="einheitenChart" width="27" height="27"></canvas>
           <div class="chart-legend">
             <div class="legend-item"><span class="legend-dot" style="background:#2C3D47;"></span>Befristet ({{ objekt.einheiten_befristet or 0 }})</div>
             <div class="legend-item"><span class="legend-dot" style="background:#EAE0C8;"></span>Unbefristet ({{ objekt.einheiten_unbefristet or 0 }})</div>
@@ -222,6 +222,18 @@ function sliderRender() {
 }
 // Auto-advance alle 5 Sekunden
 setInterval(() => sliderMove(1), 5000);
+
+// Touch-Swipe
+let touchStartX = 0;
+const sliderWrap = document.getElementById('slider-wrap');
+if (sliderWrap) {
+  sliderWrap.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+  sliderWrap.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (diff > 50) sliderMove(1);
+    if (diff < -50) sliderMove(-1);
+  });
+}
 </script>
 {% endif %}
 {% if objekt.ende %}

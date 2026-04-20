@@ -475,6 +475,14 @@ def verfahren_teilen(token):
     return render_template('verfahren_teilen.html', objekt=objekt)
 
 
+# ─── Impressum ──────────────────────────────────────────────────────────────
+
+@auth_bp.route('/impressum')
+def impressum():
+    """Öffentliche Impressum-Seite."""
+    return render_template('impressum.html')
+
+
 # ─── Sprachumschalter ───────────────────────────────────────────────────────
 
 @auth_bp.route('/sprache/<lang>')
