@@ -64,7 +64,7 @@ img, svg { display: block; }
 /* ── Hero (Landing) ──────────────────────────────────────── */
 .hero {
   position: relative; min-height: 100vh;
-  background: var(--bg-dark);
+  background: #ffffff;
   display: flex; align-items: center; overflow: hidden;
 }
 #netCanvas {
@@ -78,52 +78,52 @@ img, svg { display: block; }
 .hero-left { display: flex; flex-direction: column; justify-content: center; }
 .hero-label {
   font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: rgba(234,224,200,0.6); border: 0.5px solid rgba(234,224,200,0.25);
+  color: rgba(44,61,71,0.5); border: 0.5px solid rgba(44,61,71,0.2);
   display: inline-block; padding: 3px 8px; margin-bottom: 14px; width: fit-content;
 }
 .hero-h1 {
-  font-size: 36px; font-weight: 300; color: var(--accent);
+  font-size: 36px; font-weight: 300; color: var(--primary);
   line-height: 1.2; margin-bottom: 14px; white-space: pre-line;
 }
-.hero-sub { font-size: 13px; color: rgba(234,224,200,0.45); line-height: 1.7; max-width: 380px; }
+.hero-sub { font-size: 13px; color: rgba(44,61,71,0.55); line-height: 1.7; max-width: 380px; }
 .hero-right { display: flex; align-items: center; justify-content: center; }
 
 /* Login-Card */
 .login-card {
-  background: rgba(26,40,48,0.85); border: 0.5px solid rgba(234,224,200,0.15);
+  background: rgba(255,255,255,0.85); border: 0.5px solid rgba(107,124,133,0.2);
   backdrop-filter: blur(12px); padding: 36px; border-radius: 4px; width: 100%; max-width: 380px;
 }
 .login-card-label {
   font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(234,224,200,0.5); display: block; margin-bottom: 16px;
+  color: rgba(44,61,71,0.5); display: block; margin-bottom: 16px;
 }
 .login-card input {
   display: block; width: 100%; background: transparent; border: none;
-  border-bottom: 1px solid rgba(234,224,200,0.2); color: var(--accent);
+  border-bottom: 1px solid rgba(44,61,71,0.2); color: var(--primary);
   font-size: 13px; padding: 10px 0; outline: none; margin-bottom: 14px;
 }
-.login-card input::placeholder { color: rgba(234,224,200,0.3); }
+.login-card input::placeholder { color: rgba(44,61,71,0.3); }
 .btn-main {
-  display: block; width: 100%; background: var(--accent); color: var(--primary);
+  display: block; width: 100%; background: var(--primary); color: #ffffff;
   font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
   padding: 12px; border: none; border-radius: 2px; cursor: pointer; margin-bottom: 10px;
   text-align: center; transition: opacity 0.15s;
 }
-.btn-main:hover { opacity: 0.88; }
+.btn-main:hover { opacity: 0.8; }
 .divider { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
-.divider::before, .divider::after { content: ''; flex: 1; height: 0.5px; background: rgba(234,224,200,0.15); }
-.divider span { font-size: 10px; color: rgba(234,224,200,0.3); }
+.divider::before, .divider::after { content: ''; flex: 1; height: 0.5px; background: rgba(44,61,71,0.15); }
+.divider span { font-size: 10px; color: rgba(44,61,71,0.3); }
 .btn-outline {
   display: block; width: 100%; background: transparent;
-  color: rgba(234,224,200,0.5); font-size: 12px; padding: 10px;
-  border: 0.5px solid rgba(234,224,200,0.2); border-radius: 2px;
+  color: rgba(44,61,71,0.5); font-size: 12px; padding: 10px;
+  border: 0.5px solid rgba(44,61,71,0.2); border-radius: 2px;
   cursor: pointer; margin-bottom: 10px; text-align: center;
 }
 .anfrage-link {
   display: block; text-align: center; font-size: 11px;
   color: rgba(107,124,133,0.8); margin-top: 4px;
 }
-.anfrage-link:hover { color: var(--accent); }
+.anfrage-link:hover { color: var(--primary); }
 
 /* ── Ablauf-Schritte ─────────────────────────────────────── */
 .section { padding: 48px 60px; border-top: 0.5px solid var(--line); }

@@ -1,64 +1,84 @@
-(function() {
+(function(){
   const canvas = document.getElementById('netCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const wrap = canvas.parentElement;
-  let W, H, nodes;
-  const isMobile = window.innerWidth < 768;
-  const COUNT = isMobile ? 25 : 55;
-  const DIST  = isMobile ? 80 : 130;
 
-  function resize() {
-    W = canvas.width = wrap.offsetWidth;
+  let W, H, nodes = [], animId;
+
+  const isMobile  = window.innerWidth < 768;
+  const NODE_COUNT = isMobile ? 55 : 110;
+  const MAX_DIST   = isMobile ? 100 : 160;
+  const SPEED      = 0.45;
+  const COL        = 'rgba(107,124,133,';
+
+  function resize(){
+    W = canvas.width  = wrap.offsetWidth;
     H = canvas.height = wrap.offsetHeight;
   }
 
-  function init() {
-    nodes = Array.from({length: COUNT}, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      r: Math.random() * 1.5 + 0.5
-    }));
+  function makeNode(){
+    return {
+      x:  Math.random() * W,
+      y:  Math.random() * H,
+      vx: (Math.random() - 0.5) * SPEED,
+      vy: (Math.random() - 0.5) * SPEED,
+      r:  Math.random() * 2.2 + 1
+    };
   }
 
-  function draw() {
+  function init(){
+    resize();
+    nodes = [];
+    for (let i = 0; i < NODE_COUNT; i++) nodes.push(makeNode());
+    cancelAnimationFrame(animId);
+    loop();
+  }
+
+  function loop(){
     ctx.clearRect(0, 0, W, H);
-    nodes.forEach(n => {
-      n.x += n.vx; n.y += n.vy;
-      if (n.x < 0 || n.x > W) n.vx *= -1;
-      if (n.y < 0 || n.y > H) n.vy *= -1;
-    });
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j];
-        const d = Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
-        if (d < DIST) {
-          const alpha = (1 - d / DIST) * 0.5;
-          const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-          g.addColorStop(0, `rgba(234,224,200,${alpha})`);
-          g.addColorStop(0.5, `rgba(107,124,133,${alpha * 0.7})`);
-          g.addColorStop(1, `rgba(234,224,200,${alpha})`);
-          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = g; ctx.lineWidth = 0.6; ctx.stroke();
+
+    for (let i = 0; i < nodes.length; i++){
+      const a = nodes[i];
+      a.x += a.vx; a.y += a.vy;
+      if (a.x < 0 || a.x > W) a.vx *= -1;
+      if (a.y < 0 || a.y > H) a.vy *= -1;
+
+      for (let j = i + 1; j < nodes.length; j++){
+        const b = nodes[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < MAX_DIST){
+          const alpha = (1 - dist / MAX_DIST) * 0.4;
+          ctx.beginPath();
+          ctx.strokeStyle = COL + alpha + ')';
+          ctx.lineWidth = 0.65;
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
         }
       }
     }
-    nodes.forEach(n => {
-      const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 5);
-      g.addColorStop(0, 'rgba(234,224,200,0.4)');
-      g.addColorStop(1, 'rgba(234,224,200,0)');
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 5, 0, Math.PI * 2);
-      ctx.fillStyle = g; ctx.fill();
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      ctx.fillStyle = '#EAE0C8'; ctx.fill();
-    });
-    requestAnimationFrame(draw);
+
+    for (let i = 0; i < nodes.length; i++){
+      const n = nodes[i];
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = COL + '0.7)';
+      ctx.fill();
+    }
+
+    animId = requestAnimationFrame(loop);
   }
 
-  window.addEventListener('scroll', () => {
-    canvas.style.transform = `translateY(${window.scrollY * 0.3}px)`;
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      cancelAnimationFrame(animId);
+      init();
+    }, 150);
   });
-  window.addEventListener('resize', () => { resize(); });
-  resize(); init(); draw();
+
+  init();
 })();
