@@ -10,7 +10,7 @@
   const NODE_COUNT = isMobile ? 55 : 110;
   const MAX_DIST   = isMobile ? 100 : 160;
   const SPEED      = 0.45;
-  const COL        = 'rgba(107,124,133,';
+  const COL        = 'rgba(44,61,71,';
 
   function resize(){
     W = canvas.width  = wrap.offsetWidth;

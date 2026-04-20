@@ -64,7 +64,7 @@ img, svg { display: block; }
 /* ── Hero (Landing) ──────────────────────────────────────── */
 .hero {
   position: relative; min-height: 100vh;
-  background: #ffffff;
+  background: var(--bg);
   display: flex; align-items: center; overflow: hidden;
 }
 #netCanvas {
