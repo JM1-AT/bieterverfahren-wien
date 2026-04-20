@@ -614,7 +614,7 @@ footer a:hover { color: var(--primary); }
 .btn-download-nda:hover {
   background: rgba(234,224,200,0.1);
 }
-.chart-wrap canvas { flex-shrink: 0; }
+.chart-wrap canvas { width: 120px; height: 120px; flex-shrink: 0; }
 .chart-legend { display: flex; flex-direction: column; gap: 8px; }
 .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
 .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
@@ -767,6 +767,9 @@ button { -webkit-appearance: none; appearance: none; }
 
   /* MIETDATEN DONUT */
   .mietdaten-block { flex-direction: column; }
+
+  /* RENDITE */
+  .rendite-wert { font-size: 26px; }
 
   /* NDA MODAL – vollständig scrollbar */
   .nda-overlay { align-items: flex-start; padding: 0; overflow-y: auto; min-height: 100vh; }

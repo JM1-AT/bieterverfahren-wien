@@ -173,7 +173,7 @@
         {% endif %}
         {% if objekt.total_einheiten > 0 %}
         <div class="chart-wrap">
-          <canvas id="einheitenChart" width="27" height="27"></canvas>
+          <canvas id="einheitenChart" width="120" height="120"></canvas>
           <div class="chart-legend">
             <div class="legend-item"><span class="legend-dot" style="background:#2C3D47;"></span>Befristet ({{ objekt.einheiten_befristet or 0 }})</div>
             <div class="legend-item"><span class="legend-dot" style="background:#EAE0C8;"></span>Unbefristet ({{ objekt.einheiten_unbefristet or 0 }})</div>
@@ -295,6 +295,7 @@ if (betragInput) betragInput.addEventListener('input', updateRendite);
       }]
     },
     options: {
+      responsive: false,
       cutout: '68%',
       plugins: {
         legend: { display: false },
